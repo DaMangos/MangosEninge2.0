@@ -1,89 +1,113 @@
-#ifndef App_hpp
-#define App_hpp
-#include <string>
-#include <vector>
-#include <array>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <exception>
-
+#pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
-#define MGO_USE_MATRIX_TYPEDEF
-#define MGO_USE_MATHS_DEFINES
-#include "MangosMaths.hpp"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <array>
+#include <deque>
+#include <set>
+#include <map>
+#include <unordered_map>
+#include <tuple>
+#include <exception>
 
+#include <cstring>
+#include <cmath>
+#include <assert.h>
+ 
 namespace mgo
 {
+#pragma mark - App
     class App final
     {
     public:
-        void Run();
         
-    private:
-        void Init();
-        
-        void MainLoop();
-        
-        void Destroy();
-        
-        class Window final
+#pragma mark - App::RenderWindow
+        class RenderWindow final
         {
+        private:
             friend App;
             
-            const int width, hight;
+            const std::string       windowName;
+            const std::uint32_t     windowHight;
+            const std::uint32_t     windowWidth;
+            GLFWwindow*             pWindow;
+
+            RenderWindow(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHight);
             
-            const std::string name;
+            ~RenderWindow() noexcept;
             
-            GLFWwindow* window;
-            
-            Window(int width, int hight, const std::string& name);
-            
-            ~Window() noexcept;
-            
-            bool ShouldClose() noexcept;
-            
-            static void ErrorCallback(int error, const char* description);
+            bool shouldClose() const noexcept;
         };
         
-        class VulkanInstance final
+#pragma mark - App::Device
+        class Device final
         {
+        public:
             friend App;
             
-            VkInstance vulkan_instance;
+            std::string                     appName;
+            std::string                     engineName;
+            const std::vector<const char*>  requiredExtensions;
+            const std::vector<const char*>  validationLayers;
+            VkInstance                      instance;
+            VkDebugUtilsMessengerEXT        debugMessenger;
+            VkPhysicalDevice                physicalDevice;
+            VkDevice                        device;
             
-            VulkanInstance(const std::string& app_name, const std::string& engine_name);
+            Device(const std::string& appName);
             
-            ~VulkanInstance();
+            ~Device();
+            
+            std::vector<const char*> getRequiredExtensions() noexcept;
+            
+            std::vector<const char*> getValidationLayers() noexcept;
+            
+            void setupVulkanInstance();
+            
+            void setupDebugMessenger();
+            
+            void destoryVulkanInstance() noexcept;
+            
+            void destoryDebugMessenger() noexcept;
+            
+            void populateApplicationInfo(VkApplicationInfo& applicationInfo) const noexcept;
+            
+            void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& pDebugCreateInfo) const noexcept;
+            
+            void populateInstanceCreateInfo(VkInstanceCreateInfo& instanceCreateInfo,
+                                            VkApplicationInfo* pApplicationInfo,
+                                            VkDebugUtilsMessengerCreateInfoEXT* pDebugCreateInfo) const noexcept;
+
+            bool checkExtensionSupport() const noexcept;
+
+            bool checkValidationLayerSupport() const noexcept;
+            
+            static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+                                                         const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                                         const VkAllocationCallbacks* pAllocator,
+                                                         VkDebugUtilsMessengerEXT* pDebugMessenger) noexcept;
+
+            static void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+                                                      VkDebugUtilsMessengerEXT debugMessenger,
+                                                      const VkAllocationCallbacks* pAllocator) noexcept;
+            
+            static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                                VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                                void* pUserData) noexcept;
         };
+                        
+    public:
+        App();
         
-        class ValidationLayers final
-        {
-            friend App;
-            
-            bool enable;
-            
-            const std::vector<const char*> validation_layers;
-            
-            ValidationLayers();
-            
-            ~ValidationLayers();
-            
-            bool CheckSupport() noexcept;
-        };
-        
-        class Pipeline final
-        {
-            friend App;
-            
-            Pipeline(const std::string& frag_name, const std::string& vert_name);
-            
-            std::vector<char> ReadFile(const std::string& file_name);
-        };
-        
+        ~App();
+                
+        void run();
     };
 }
-#endif
