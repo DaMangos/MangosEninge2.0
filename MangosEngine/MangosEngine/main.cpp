@@ -2,6 +2,7 @@
 
 int main()
 {
-    mgo::App::Device d("k");
+    mgo::App app;
     
+    app.run();
 }

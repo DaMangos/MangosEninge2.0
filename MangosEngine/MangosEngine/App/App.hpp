@@ -15,11 +15,11 @@
 #include <unordered_map>
 #include <tuple>
 #include <exception>
+#include <optional>
 
 #include <cstring>
 #include <cmath>
-#include <assert.h>
- 
+
 namespace mgo
 {
 #pragma mark - App
@@ -43,23 +43,45 @@ namespace mgo
             ~RenderWindow() noexcept;
             
             bool shouldClose() const noexcept;
+            
+            static void pollEvents() noexcept;
+            
+            static void errorCallback(int error, const char* description);
         };
         
 #pragma mark - App::Device
         class Device final
         {
-        public:
+        private:
             friend App;
+            
+            class QueueFamilyIndices
+            {
+            private:
+                friend Device;
+                
+                std::optional<std::uint32_t> graphicsFamily;
+                
+                QueueFamilyIndices() = default;
+                
+                QueueFamilyIndices(VkPhysicalDevice device) noexcept;
+                                
+                void findQueueFamilies(VkPhysicalDevice device) noexcept;
+
+                bool isComplete() const noexcept;
+            };
             
             std::string                     appName;
             std::string                     engineName;
             const std::vector<const char*>  requiredExtensions;
             const std::vector<const char*>  validationLayers;
+            QueueFamilyIndices              indices;
             VkInstance                      instance;
             VkDebugUtilsMessengerEXT        debugMessenger;
             VkPhysicalDevice                physicalDevice;
             VkDevice                        device;
-            
+            VkQueue                         graphicsQueue;
+
             Device(const std::string& appName);
             
             ~Device();
@@ -72,21 +94,35 @@ namespace mgo
             
             void setupDebugMessenger();
             
+            void setupPhysicalDevice();
+            
+            void setupDevice();
+
             void destoryVulkanInstance() noexcept;
             
             void destoryDebugMessenger() noexcept;
             
+            void destroyDevice() noexcept;
+            
             void populateApplicationInfo(VkApplicationInfo& applicationInfo) const noexcept;
             
-            void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& pDebugCreateInfo) const noexcept;
+            void populateDebugUtilsMessengerCreateInfoEXT(VkDebugUtilsMessengerCreateInfoEXT& pDebugCreateInfo) const noexcept;
             
             void populateInstanceCreateInfo(VkInstanceCreateInfo& instanceCreateInfo,
                                             VkApplicationInfo* pApplicationInfo,
                                             VkDebugUtilsMessengerCreateInfoEXT* pDebugCreateInfo) const noexcept;
+            
+            void populateDeviceQueueCreateInfo(VkDeviceQueueCreateInfo& queueCreateInfo) const noexcept;
+            
+            void populatePhysicalDeviceFeatures(VkPhysicalDeviceFeatures& physicalDeviceFeatures) const noexcept;
+            
+            void populateDeviceCreateInfo(VkDeviceCreateInfo& deviceCreateInfo,
+                                          VkDeviceQueueCreateInfo* queueCreateInfo,
+                                          VkPhysicalDeviceFeatures* physicalDeviceFeatures) const noexcept;
 
-            bool checkExtensionSupport() const noexcept;
+            void checkExtensionSupport() const noexcept;
 
-            bool checkValidationLayerSupport() const noexcept;
+            void checkValidationLayerSupport() const noexcept;
             
             static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
                                                          const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -102,6 +138,10 @@ namespace mgo
                                                                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                                 void* pUserData) noexcept;
         };
+        
+        std::string appName;
+        RenderWindow window;
+        Device device;
                         
     public:
         App();
