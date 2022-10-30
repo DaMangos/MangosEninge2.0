@@ -83,16 +83,18 @@ namespace mgo
     :
     appName(appName),
     engineName("Magnos Engine"),
-    requiredExtensions(this->getRequiredExtensions()),
     validationLayers(this->getValidationLayers()),
+    requiredInstanceExtensions(this->getRequiredInstanceExtensions()),
+    requiredDeviceExtensions(this->getRequiredDeviceExtensions()),
     instance(VK_NULL_HANDLE),
     debugMessenger(VK_NULL_HANDLE),
     physicalDevice(VK_NULL_HANDLE),
     device(VK_NULL_HANDLE)
     {
         this->setupVulkanInstance();
-        if (MGO_DEBUG)
-            this->setupDebugMessenger();
+#if MGO_DEBUG
+        this->setupDebugMessenger();
+#endif
         this->setupPhysicalDevice();
         this->setupDevice();
     }
@@ -100,22 +102,10 @@ namespace mgo
     App::Device::~Device()
     {
         this->destroyDevice();
-        if (MGO_DEBUG)
-            this->destoryDebugMessenger();
+#if MGO_DEBUG
+        this->destoryDebugMessenger();
+#endif
         this->destoryVulkanInstance();
-    }
-    
-    std::vector<const char*> App::Device::getRequiredExtensions() noexcept
-    {
-        std::uint32_t glfwExtensionCount = 0;
-        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-        
-        if (MGO_DEBUG)
-            requiredExtensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        if (__APPLE__)
-            requiredExtensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
-        return requiredExtensions;
     }
     
     std::vector<const char*> App::Device::getValidationLayers() noexcept
@@ -123,21 +113,43 @@ namespace mgo
         return std::vector<const char*>({"VK_LAYER_KHRONOS_validation"});
     }
     
+    std::vector<const char*> App::Device::getRequiredInstanceExtensions() noexcept
+    {
+        std::uint32_t glfwExtensionCount = 0;
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+                
+        std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+#if __APPLE__
+        requiredExtensions.emplace_back("VK_KHR_portability_enumeration");
+#endif
+#if MGO_DEBUG
+        requiredExtensions.emplace_back("VK_EXT_debug_utils");
+#endif
+        return requiredExtensions;
+    }
+    
+    std::vector<const char*> App::Device::getRequiredDeviceExtensions() noexcept
+    {
+#if __APPLE__
+        return std::vector<const char*>({"VK_KHR_portability_subset"});
+#else
+        return std::vector<const char*>({});
+#endif
+    }
+    
     void App::Device::setupVulkanInstance()
     {
-        if (MGO_DEBUG)
-        {
-            this->checkValidationLayerSupport();
-            this->checkExtensionSupport();
-        }
-            
-        VkApplicationInfo appInfo;
+#if MGO_DEBUG
+        this->checkValidationLayerSupport();
+        this->checkInstanceExtensionSupport();
+#endif
+        VkApplicationInfo appInfo{};
         this->populateApplicationInfo(appInfo);
         
-        VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo;
+        VkDebugUtilsMessengerCreateInfoEXT DebugCreateInfo{};
         this->populateDebugUtilsMessengerCreateInfoEXT(DebugCreateInfo);
         
-        VkInstanceCreateInfo createInfo;
+        VkInstanceCreateInfo createInfo{};
         this->populateInstanceCreateInfo(createInfo, &appInfo, &DebugCreateInfo);
         
         if (vkCreateInstance(&createInfo, nullptr, &this->instance) != VK_SUCCESS)
@@ -146,7 +158,7 @@ namespace mgo
     
     void App::Device::setupDebugMessenger()
     {
-        VkDebugUtilsMessengerCreateInfoEXT createInfo;
+        VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         this->populateDebugUtilsMessengerCreateInfoEXT(createInfo);
         
         if (CreateDebugUtilsMessengerEXT(this->instance, &createInfo, nullptr, &this->debugMessenger) != VK_SUCCESS)
@@ -190,18 +202,18 @@ namespace mgo
     
     void App::Device::setupDevice()
     {
-        VkDeviceQueueCreateInfo deviceQueueCreateInfo;
-        this->populateDeviceQueueCreateInfo(deviceQueueCreateInfo);
+        VkDeviceQueueCreateInfo queueCreateInfo;
+        this->populateDeviceQueueCreateInfo(queueCreateInfo);
         
-        VkPhysicalDeviceFeatures physicalDeviceFeatures{};
-        //this->populatePhysicalDeviceFeatures(physicalDeviceFeatures);
+        VkPhysicalDeviceFeatures physicalDeviceFeatures;
+        this->populatePhysicalDeviceFeatures(physicalDeviceFeatures);
         
         VkDeviceCreateInfo deviceCreateInfo;
-        this->populateDeviceCreateInfo(deviceCreateInfo, &deviceQueueCreateInfo, &physicalDeviceFeatures);
+        this->populateDeviceCreateInfo(deviceCreateInfo, queueCreateInfo, physicalDeviceFeatures);
         
         if (vkCreateDevice(this->physicalDevice, &deviceCreateInfo, nullptr, &this->device) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create logical device!");
-        
+            throw std::runtime_error("failed to create logical device!");
+
         vkGetDeviceQueue(this->device, this->indices.graphicsFamily.value(), 0, &this->graphicsQueue);
     }
 
@@ -257,14 +269,14 @@ namespace mgo
         instanceCreateInfo.pApplicationInfo         = pApplicationInfo;
         instanceCreateInfo.enabledLayerCount        = MGO_DEBUG ? static_cast<std::uint32_t>(this->validationLayers.size()) : 0;
         instanceCreateInfo.ppEnabledLayerNames      = MGO_DEBUG ? this->validationLayers.data() : nullptr;
-        instanceCreateInfo.enabledExtensionCount    = static_cast<std::uint32_t>(this->requiredExtensions.size());
-        instanceCreateInfo.ppEnabledExtensionNames  = this->requiredExtensions.data();
+        instanceCreateInfo.enabledExtensionCount    = static_cast<std::uint32_t>(this->requiredInstanceExtensions.size());
+        instanceCreateInfo.ppEnabledExtensionNames  = this->requiredInstanceExtensions.data();
     }
     
     void App::Device::populateDeviceQueueCreateInfo(VkDeviceQueueCreateInfo& queueCreateInfo) const noexcept
     {
         float queuePriority                 = 1.0f;
-        queueCreateInfo.sType               = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        queueCreateInfo.sType               = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.pNext               = nullptr;
         queueCreateInfo.flags               = 0;
         queueCreateInfo.queueFamilyIndex    = this->indices.graphicsFamily.value();
@@ -332,23 +344,22 @@ namespace mgo
     }
 
     void App::Device::populateDeviceCreateInfo(VkDeviceCreateInfo& deviceCreateInfo,
-                                               VkDeviceQueueCreateInfo* queueCreateInfo,
-                                               VkPhysicalDeviceFeatures* physicalDeviceFeatures) const noexcept
+                                               VkDeviceQueueCreateInfo& queueCreateInfo,
+                                               VkPhysicalDeviceFeatures& physicalDeviceFeatures) const noexcept
     {
         deviceCreateInfo.sType                      = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         deviceCreateInfo.pNext                      = nullptr;
         deviceCreateInfo.flags                      = 0;
         deviceCreateInfo.queueCreateInfoCount       = 1;
-        deviceCreateInfo.pQueueCreateInfos          = queueCreateInfo;
+        deviceCreateInfo.pQueueCreateInfos          = &queueCreateInfo;
         deviceCreateInfo.enabledLayerCount          = MGO_DEBUG ? static_cast<std::uint32_t>(this->validationLayers.size()) : 0;
         deviceCreateInfo.ppEnabledLayerNames        = MGO_DEBUG ? this->validationLayers.data() : nullptr;
-        deviceCreateInfo.enabledExtensionCount      = 0;
-        deviceCreateInfo.ppEnabledExtensionNames    = nullptr;
-        deviceCreateInfo.pEnabledFeatures           = physicalDeviceFeatures;
+        deviceCreateInfo.enabledExtensionCount      = static_cast<std::uint32_t>(this->requiredDeviceExtensions.size());
+        deviceCreateInfo.ppEnabledExtensionNames    = this->requiredDeviceExtensions.data();
+        deviceCreateInfo.pEnabledFeatures           = &physicalDeviceFeatures;
     }
-
     
-    void App::Device::checkExtensionSupport() const noexcept
+    void App::Device::checkInstanceExtensionSupport() const noexcept
     {
         std::uint32_t supportedExtensionCount = 0;
         vkEnumerateInstanceExtensionProperties(nullptr, &supportedExtensionCount, nullptr);
@@ -357,7 +368,7 @@ namespace mgo
         vkEnumerateInstanceExtensionProperties(nullptr, &supportedExtensionCount, supportedExtensions.data());
         
         bool allExtensionFound = true;
-        for (const auto& requiredExtension : this->requiredExtensions)
+        for (const auto& requiredExtension : this->requiredInstanceExtensions)
         {
             bool extensionFound = false;
             for (const auto& supportedExtension : supportedExtensions)
@@ -427,7 +438,7 @@ namespace mgo
                                                               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                               void* pUserData) noexcept
     {
-        std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
+        std::cerr << pCallbackData->pMessage << std::endl;
         return VK_FALSE;
     }
     

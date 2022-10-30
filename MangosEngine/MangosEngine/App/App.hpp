@@ -73,8 +73,9 @@ namespace mgo
             
             std::string                     appName;
             std::string                     engineName;
-            const std::vector<const char*>  requiredExtensions;
             const std::vector<const char*>  validationLayers;
+            const std::vector<const char*>  requiredInstanceExtensions;
+            const std::vector<const char*>  requiredDeviceExtensions;
             QueueFamilyIndices              indices;
             VkInstance                      instance;
             VkDebugUtilsMessengerEXT        debugMessenger;
@@ -86,10 +87,12 @@ namespace mgo
             
             ~Device();
             
-            std::vector<const char*> getRequiredExtensions() noexcept;
-            
             std::vector<const char*> getValidationLayers() noexcept;
+
+            std::vector<const char*> getRequiredInstanceExtensions() noexcept;
             
+            std::vector<const char*> getRequiredDeviceExtensions() noexcept;
+                        
             void setupVulkanInstance();
             
             void setupDebugMessenger();
@@ -117,10 +120,10 @@ namespace mgo
             void populatePhysicalDeviceFeatures(VkPhysicalDeviceFeatures& physicalDeviceFeatures) const noexcept;
             
             void populateDeviceCreateInfo(VkDeviceCreateInfo& deviceCreateInfo,
-                                          VkDeviceQueueCreateInfo* queueCreateInfo,
-                                          VkPhysicalDeviceFeatures* physicalDeviceFeatures) const noexcept;
+                                          VkDeviceQueueCreateInfo& queueCreateInfo,
+                                          VkPhysicalDeviceFeatures& physicalDeviceFeatures) const noexcept;
 
-            void checkExtensionSupport() const noexcept;
+            void checkInstanceExtensionSupport() const noexcept;
 
             void checkValidationLayerSupport() const noexcept;
             
