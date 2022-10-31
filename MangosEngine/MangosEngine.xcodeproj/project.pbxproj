@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		FF29E766290AD6D500230659 /* shader.frag in Sources */ = {isa = PBXBuildFile; fileRef = FF29E764290AD6D500230659 /* shader.frag */; };
-		FF29E773290D975300230659 /* App.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF29E771290D975300230659 /* App.cpp */; };
+		FF29E773290D975300230659 /* app.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF29E771290D975300230659 /* app.cpp */; };
 		FF31C0DC28F71F5F00967CB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF31C0DB28F71F5F00967CB1 /* main.cpp */; };
 		FF31C0ED28F7215600967CB1 /* libvulkan.1.3.216.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */; };
 		FF31C0EE28F7215C00967CB1 /* libvulkan.1.3.216.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */; };
@@ -35,8 +35,8 @@
 		FF29E763290AD6B200230659 /* shader.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = shader.vert; path = MangosEngine/Shaders/shader.vert; sourceTree = SOURCE_ROOT; };
 		FF29E764290AD6D500230659 /* shader.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.frag; sourceTree = "<group>"; };
 		FF29E767290AD98F00230659 /* compile.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = compile.sh; path = /Users/oliverhorriganpierre/Documents/Xcode/MangosEngine/MangosEngine/Shaders/compile.sh; sourceTree = "<absolute>"; };
-		FF29E771290D975300230659 /* App.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = App.cpp; sourceTree = "<group>"; };
-		FF29E772290D975300230659 /* App.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = App.hpp; sourceTree = "<group>"; };
+		FF29E771290D975300230659 /* app.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = app.cpp; sourceTree = "<group>"; };
+		FF29E772290D975300230659 /* app.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = app.hpp; sourceTree = "<group>"; };
 		FF31C0D828F71F5F00967CB1 /* MangosEngine */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MangosEngine; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF31C0DB28F71F5F00967CB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		FF31C0E228F71F6300967CB1 /* MangosEngine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MangosEngine.entitlements; sourceTree = "<group>"; };
@@ -60,8 +60,8 @@
 		FF29E75E290AC96400230659 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				FF29E771290D975300230659 /* App.cpp */,
-				FF29E772290D975300230659 /* App.hpp */,
+				FF29E771290D975300230659 /* app.cpp */,
+				FF29E772290D975300230659 /* app.hpp */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -180,7 +180,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FF31C0DC28F71F5F00967CB1 /* main.cpp in Sources */,
-				FF29E773290D975300230659 /* App.cpp in Sources */,
+				FF29E773290D975300230659 /* app.cpp in Sources */,
 				FFE798FF290E01FD007153EC /* shader.vert in Sources */,
 				FF29E766290AD6D500230659 /* shader.frag in Sources */,
 			);
