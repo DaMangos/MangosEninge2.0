@@ -18,6 +18,7 @@
 #include <optional>
 #include <algorithm>
 #include <limits>
+#include <limits>
 
 #include <cstdint>
 #include <cstring>
@@ -81,7 +82,12 @@ namespace mgo
             VkDevice                        device_;
             VkQueue                         graphicsQueue_;
             VkQueue                         presentQueue_;
+            VkSurfaceCapabilitiesKHR        surfaceCapabilities_;
+            VkSurfaceFormatKHR              surfaceFormat_;
+            VkPresentModeKHR                presentMode_;
+            VkExtent2D                      extent_;
             VkSwapchainKHR                  swapchain_;
+            std::vector<VkImage>            images_;
             
             Device(const std::string& appName, const RenderWindow& window);
             
@@ -133,7 +139,7 @@ namespace mgo
             
             void populateQueueFamilyIndices(QueueFamilyIndices& indices, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, float queuePriority) const noexcept;
                         
-            void populateSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR& SwapchainCreateInfo, const RenderWindow& window) const noexcept;
+            void populateSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR& SwapchainCreateInfo) const noexcept;
             
             bool checkValidationLayerSupport() const noexcept;
 
@@ -155,19 +161,13 @@ namespace mgo
                                                                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                                 void* pUserData) noexcept;
             
-            VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-            {
-                for (const auto& availableFormat : availableFormats)
-                    if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-                        availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-                        return availableFormat;
-                
-                return availableFormats[0];
-            }
+            void setupSurfaceCapabilities() noexcept;
+
+            void setupSurfaceFormat() noexcept;
             
-            VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-                return VK_PRESENT_MODE_FIFO_KHR;
-            }
+            void setupPresentMode() noexcept;
+            
+            void setupExtent(const RenderWindow& window) noexcept;
         };
         
 #pragma mark - App::Pipeline

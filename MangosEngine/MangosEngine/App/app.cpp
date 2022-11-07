@@ -3,7 +3,7 @@
 namespace mgo
 {
 #pragma mark - App::RenderWindow
-  
+    
     App::RenderWindow::RenderWindow(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHight)
     :
     windowName_(windowName), windowHight_(windowHight), windowWidth_(windowWidth), pWindow_(nullptr)
@@ -38,7 +38,7 @@ namespace mgo
         int width, height;
         
         glfwGetFramebufferSize(this->pWindow_, &width, &height);
-
+        
         return {static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height)};
     }
     
@@ -56,7 +56,7 @@ namespace mgo
     {
         std::cerr << "GLFW error: " << description << std::endl;
     }
-
+    
 #pragma mark - App::Device
     App::Device::Device(const std::string& appName, const RenderWindow& window)
     :
@@ -64,14 +64,7 @@ namespace mgo
     engineName_("Magnos Engine"),
     validationLayers_(this->getValidationLayers()),
     instanceExtensions_(this->getinstanceExtensions()),
-    deviceExtensions_(this->getdeviceExtensions()),
-    instance_(VK_NULL_HANDLE),
-    debugMessenger_(VK_NULL_HANDLE),
-    surface_(VK_NULL_HANDLE),
-    physicalDevice_(VK_NULL_HANDLE),
-    device_(VK_NULL_HANDLE),
-    graphicsQueue_(VK_NULL_HANDLE),
-    presentQueue_(VK_NULL_HANDLE)
+    deviceExtensions_(this->getdeviceExtensions())
     {
         this->createVulkanInstance();
 #ifdef DEBUG
@@ -102,7 +95,7 @@ namespace mgo
     {
         std::uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-                
+        
         std::vector<const char*> requiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
         
 #ifdef __APPLE__
@@ -167,17 +160,17 @@ namespace mgo
         
         std::vector<VkPhysicalDevice> phyicalDevices(deviceCount);
         vkEnumeratePhysicalDevices(this->instance_, &deviceCount, phyicalDevices.data());
-                
+        
         std::multimap<std::uint8_t, VkPhysicalDevice, std::greater<std::uint8_t>> phyicalDevicesCandidates;
         
         for (auto potentialPhyicalDevice : phyicalDevices)
             phyicalDevicesCandidates.emplace(this->rankPhysicalDevices(potentialPhyicalDevice), potentialPhyicalDevice);
-
+        
         if (phyicalDevicesCandidates.begin()->first == 0)
             throw std::runtime_error("Failed to find a suitable GPU!");
-            
+        
         this->physicalDevice_ = phyicalDevicesCandidates.begin()->second;
-
+        
         this->populateQueueFamilyIndices(this->indices_, this->physicalDevice_, this->surface_, 1.0f);
         
         if (!this->indices_.graphicsFamily_.has_value() && !this->indices_.presentFamily_.has_value())
@@ -185,7 +178,7 @@ namespace mgo
         
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<uint32_t> uniqueQueueFamilies = {this->indices_.graphicsFamily_.value(), this->indices_.presentFamily_.value()};
-
+        
         for (uint32_t queueFamily : uniqueQueueFamilies)
         {
             VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -201,20 +194,31 @@ namespace mgo
         
         if (vkCreateDevice(this->physicalDevice_, &deviceCreateInfo, nullptr, &this->device_) != VK_SUCCESS)
             throw std::runtime_error("failed to create device!");
-
+        
         vkGetDeviceQueue(this->device_, this->indices_.graphicsFamily_.value(), 0, &this->graphicsQueue_);
         vkGetDeviceQueue(this->device_, this->indices_.presentFamily_.value(), 0, &this->presentQueue_);
     }
-
+    
     void App::Device::createSwapchain(const RenderWindow& window)
     {
+        this->setupSurfaceCapabilities();
+        this->setupSurfaceFormat();
+        this->setupPresentMode();
+        this->setupExtent(window);
+        
         VkSwapchainCreateInfoKHR swapchainCreateInfo;
-        this->populateSwapchainCreateInfoKHR(swapchainCreateInfo, window);
+        this->populateSwapchainCreateInfoKHR(swapchainCreateInfo);
         
         if (vkCreateSwapchainKHR(this->device_, &swapchainCreateInfo, nullptr, &this->swapchain_) != VK_SUCCESS)
-            throw std::runtime_error("Failed to create swap chain!");
+            throw std::runtime_error("Failed to create swapchain!");
+        
+        std::uint32_t imageCount;
+        vkGetSwapchainImagesKHR(this->device_, this->swapchain_, &imageCount, nullptr);
+        
+        this->images_.resize(static_cast<std::size_t>(imageCount));
+        vkGetSwapchainImagesKHR(this->device_, this->swapchain_, &imageCount, this->images_.data());
     }
-
+    
     void App::Device::destoryVulkanInstance() noexcept
     {
         vkDestroyInstance(this->instance_, nullptr);
@@ -239,8 +243,8 @@ namespace mgo
     {
         vkDestroySwapchainKHR(this->device_, this->swapchain_, nullptr);
     }
-
-
+    
+    
     std::uint8_t App::Device::rankPhysicalDevices(VkPhysicalDevice physicalDevice) const noexcept
     {
         std::uint8_t value = 0;
@@ -256,7 +260,7 @@ namespace mgo
         
         std::uint32_t formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, this->surface_, &formatCount, nullptr);
-
+        
         std::uint32_t presentModeCount;
         vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, this->surface_, &presentModeCount, nullptr);
         
@@ -269,16 +273,16 @@ namespace mgo
         
         if (!indices.graphicsFamily_.has_value() || !indices.presentFamily_.has_value())
             return 0;
-            
+        
         if (!this->checkDeviceExtensionSupport(physicalDevice))
             return 0;
         
         if (presentModeCount == 0 || formatCount == 0)
             return 0;
-
+        
         return value;
     }
-
+    
     void App::Device::populateApplicationInfo(VkApplicationInfo& appInfo) const noexcept
     {
         appInfo.sType               = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -400,7 +404,7 @@ namespace mgo
         physicalDeviceFeatures.variableMultisampleRate                  = 0;
         physicalDeviceFeatures.inheritedQueries                         = 0;
     }
-
+    
     void App::Device::populateDeviceCreateInfo(VkDeviceCreateInfo& deviceCreateInfo,
                                                const std::vector<VkDeviceQueueCreateInfo>& QueueCreateInfos,
                                                const VkPhysicalDeviceFeatures* pPhysicalDeviceFeatures) const noexcept
@@ -436,7 +440,7 @@ namespace mgo
         
         std::uint32_t queueFamilyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-
+        
         std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, queueFamilies.data());
         
@@ -445,7 +449,7 @@ namespace mgo
         {
             VkBool32 presentSupport = false;
             vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
-
+            
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
                 indices.graphicsFamily_ = i;
             
@@ -455,42 +459,12 @@ namespace mgo
             i++;
         }
     }
-
-    void App::Device::populateSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR& SwapchainCreateInfo, const RenderWindow& window) const noexcept
+    
+    void App::Device::populateSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR& SwapchainCreateInfo) const noexcept
     {
-        VkSurfaceCapabilitiesKHR surfaceCapabilities;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(this->physicalDevice_, this->surface_, &surfaceCapabilities);
-        
-        std::uint32_t minImageCount = surfaceCapabilities.maxImageCount > 0 && surfaceCapabilities.minImageCount + 1 > surfaceCapabilities.maxImageCount ?
-                                   surfaceCapabilities.maxImageCount : surfaceCapabilities.minImageCount + 1;
-        
-        std::uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(this->physicalDevice_, this->surface_, &formatCount, nullptr);
-
-        std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(this->physicalDevice_, this->surface_, &formatCount, surfaceFormats.data());
-        
-        VkSurfaceFormatKHR surfaceFormat = surfaceFormats[0];
-        for (const auto& availableSurfaceFormat : surfaceFormats)
-            if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-                surfaceFormat = availableSurfaceFormat;
-        
-        std::uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(this->physicalDevice_, this->surface_, &presentModeCount, nullptr);
-
-        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(this->physicalDevice_, this->surface_, &presentModeCount, presentModes.data());
-        
-        VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-        for (const auto& availablePresentMode : presentModes)
-            if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-                presentMode = availablePresentMode;
-        
-        VkExtent2D imageExtent =
-        {
-            std::clamp(window.GetFramebufferSize().width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
-            std::clamp(window.GetFramebufferSize().height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
-        };
+        std::uint32_t minImageCount =
+        this->surfaceCapabilities_.maxImageCount > 0 && this->surfaceCapabilities_.minImageCount + 1 > this->surfaceCapabilities_.maxImageCount ?
+        this->surfaceCapabilities_.maxImageCount : this->surfaceCapabilities_.minImageCount + 1;
         
         if (this->indices_.graphicsFamily_ != this->indices_.presentFamily_)
         {
@@ -501,17 +475,17 @@ namespace mgo
             SwapchainCreateInfo.flags                    = 0;
             SwapchainCreateInfo.surface                  = this->surface_;
             SwapchainCreateInfo.minImageCount            = minImageCount;
-            SwapchainCreateInfo.imageFormat              = surfaceFormat.format;
-            SwapchainCreateInfo.imageColorSpace          = surfaceFormat.colorSpace;
-            SwapchainCreateInfo.imageExtent              = imageExtent;
+            SwapchainCreateInfo.imageFormat              = this->surfaceFormat_.format;
+            SwapchainCreateInfo.imageColorSpace          = this->surfaceFormat_.colorSpace;
+            SwapchainCreateInfo.imageExtent              = this->extent_;
             SwapchainCreateInfo.imageArrayLayers         = 1;
             SwapchainCreateInfo.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             SwapchainCreateInfo.imageSharingMode         = VK_SHARING_MODE_CONCURRENT;
             SwapchainCreateInfo.queueFamilyIndexCount    = 2;
             SwapchainCreateInfo.pQueueFamilyIndices      = queueFamilyIndices.data();
-            SwapchainCreateInfo.preTransform             = surfaceCapabilities.currentTransform;
+            SwapchainCreateInfo.preTransform             = this->surfaceCapabilities_.currentTransform;
             SwapchainCreateInfo.compositeAlpha           = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-            SwapchainCreateInfo.presentMode              = presentMode;
+            SwapchainCreateInfo.presentMode              = this->presentMode_;
             SwapchainCreateInfo.clipped                  = VK_TRUE;
             SwapchainCreateInfo.oldSwapchain             = VK_NULL_HANDLE;
         }
@@ -522,17 +496,17 @@ namespace mgo
             SwapchainCreateInfo.flags                    = 0;
             SwapchainCreateInfo.surface                  = this->surface_;
             SwapchainCreateInfo.minImageCount            = minImageCount;
-            SwapchainCreateInfo.imageFormat              = surfaceFormat.format;
-            SwapchainCreateInfo.imageColorSpace          = surfaceFormat.colorSpace;
-            SwapchainCreateInfo.imageExtent              = imageExtent;
+            SwapchainCreateInfo.imageFormat              = this->surfaceFormat_.format;
+            SwapchainCreateInfo.imageColorSpace          = this->surfaceFormat_.colorSpace;
+            SwapchainCreateInfo.imageExtent              = this->extent_;
             SwapchainCreateInfo.imageArrayLayers         = 1;
             SwapchainCreateInfo.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             SwapchainCreateInfo.imageSharingMode         = VK_SHARING_MODE_EXCLUSIVE;
             SwapchainCreateInfo.queueFamilyIndexCount    = 0;
             SwapchainCreateInfo.pQueueFamilyIndices      = nullptr;
-            SwapchainCreateInfo.preTransform             = surfaceCapabilities.currentTransform;
+            SwapchainCreateInfo.preTransform             = this->surfaceCapabilities_.currentTransform;
             SwapchainCreateInfo.compositeAlpha           = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-            SwapchainCreateInfo.presentMode              = presentMode;
+            SwapchainCreateInfo.presentMode              = this->presentMode_;
             SwapchainCreateInfo.clipped                  = VK_TRUE;
             SwapchainCreateInfo.oldSwapchain             = VK_NULL_HANDLE;
         }
@@ -545,7 +519,7 @@ namespace mgo
         
         std::vector<VkLayerProperties> properties(propertyCound);
         vkEnumerateInstanceLayerProperties(&propertyCound, properties.data());
-                
+        
         bool allPropertiesFound = true;
         for (const auto& requiredProperty : this->validationLayers_)
         {
@@ -598,10 +572,10 @@ namespace mgo
     {
         std::uint32_t propertyCound = 0;
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertyCound, nullptr);
-
+        
         std::vector<VkExtensionProperties> properties(propertyCound);
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &propertyCound, properties.data());
-
+        
         bool allPropertiesFound = true;
         for (const auto& requiredProperty : this->deviceExtensions_)
         {
@@ -635,7 +609,7 @@ namespace mgo
             return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
         else
             return VK_ERROR_EXTENSION_NOT_PRESENT;
-            
+        
     }
     
     void App::Device::DestroyDebugUtilsMessengerEXT(VkInstance instance,
@@ -655,6 +629,49 @@ namespace mgo
         std::cerr << pCallbackData->pMessage << std::endl;
         return VK_FALSE;
     }
+    
+    void App::Device::setupSurfaceCapabilities() noexcept
+    {
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(this->physicalDevice_, this->surface_, &this->surfaceCapabilities_);
+    }
+    
+    void App::Device::setupSurfaceFormat() noexcept
+    {
+        std::uint32_t formatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(this->physicalDevice_, this->surface_, &formatCount, nullptr);
+        
+        std::vector<VkSurfaceFormatKHR> surfaceFormats(static_cast<std::size_t>(formatCount));
+        vkGetPhysicalDeviceSurfaceFormatsKHR(this->physicalDevice_, this->surface_, &formatCount, surfaceFormats.data());
+        
+        this->surfaceFormat_ = surfaceFormats[0];
+        for (const auto& availableSurfaceFormat : surfaceFormats)
+            if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                this->surfaceFormat_ = availableSurfaceFormat;
+    }
+    
+    void App::Device::setupPresentMode() noexcept
+    {
+        std::uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(this->physicalDevice_, this->surface_, &presentModeCount, nullptr);
+        
+        std::vector<VkPresentModeKHR> presentModes(static_cast<std::size_t>(presentModeCount));
+        vkGetPhysicalDeviceSurfacePresentModesKHR(this->physicalDevice_, this->surface_, &presentModeCount, presentModes.data());
+        
+        this->presentMode_ = VK_PRESENT_MODE_FIFO_KHR;
+        for (const auto& availablePresentMode : presentModes)
+            if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+                this->presentMode_ = availablePresentMode;
+    }
+    
+    void App::Device::setupExtent(const RenderWindow& window) noexcept
+    {
+        this->extent_ =
+        {
+            std::clamp(window.GetFramebufferSize().width, this->surfaceCapabilities_.minImageExtent.width, this->surfaceCapabilities_.maxImageExtent.width),
+            std::clamp(window.GetFramebufferSize().height, this->surfaceCapabilities_.minImageExtent.height, this->surfaceCapabilities_.maxImageExtent.height)
+        };
+    }
+
         
 #pragma mark - App::Pipeline
     
