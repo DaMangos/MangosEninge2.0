@@ -88,6 +88,8 @@ namespace mgo
             VkExtent2D                      extent_;
             VkSwapchainKHR                  swapchain_;
             std::vector<VkImage>            images_;
+            std::vector<VkImageView>        imageViews_;
+
             
             Device(const std::string& appName, const RenderWindow& window);
             
@@ -109,6 +111,8 @@ namespace mgo
             
             void createSwapchain(const RenderWindow& window);
             
+            void createImageViews();
+            
             void destoryVulkanInstance() noexcept;
             
             void destoryDebugMessenger() noexcept;
@@ -118,6 +122,8 @@ namespace mgo
             void destroyDevice() noexcept;
             
             void destroySwapchain() noexcept;
+            
+            void destroyImageViews() noexcept;
             
             std::uint8_t rankPhysicalDevices(VkPhysicalDevice physicalDevice) const noexcept;
                         
@@ -140,6 +146,8 @@ namespace mgo
             void populateQueueFamilyIndices(QueueFamilyIndices& indices, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, float queuePriority) const noexcept;
                         
             void populateSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR& SwapchainCreateInfo) const noexcept;
+            
+            void populateImageViewCreateInfo(VkImageViewCreateInfo& imageViewCreateInfo, VkImage image) const noexcept;
             
             bool checkValidationLayerSupport() const noexcept;
 

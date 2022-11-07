@@ -73,10 +73,12 @@ namespace mgo
         this->createSurface(window);
         this->createDevice();
         this->createSwapchain(window);
+        this->createImageViews();
     }
     
     App::Device::~Device()
     {
+        this->destroyImageViews();
         this->destroySwapchain();
         this->destroyDevice();
         this->destroySurface();
@@ -211,14 +213,28 @@ namespace mgo
         
         if (vkCreateSwapchainKHR(this->device_, &swapchainCreateInfo, nullptr, &this->swapchain_) != VK_SUCCESS)
             throw std::runtime_error("Failed to create swapchain!");
-        
+    }
+    
+    void App::Device::createImageViews()
+    {
         std::uint32_t imageCount;
         vkGetSwapchainImagesKHR(this->device_, this->swapchain_, &imageCount, nullptr);
         
         this->images_.resize(static_cast<std::size_t>(imageCount));
         vkGetSwapchainImagesKHR(this->device_, this->swapchain_, &imageCount, this->images_.data());
-    }
     
+        this->imageViews_.resize(static_cast<std::size_t>(imageCount));
+        
+        for (std::size_t i = 0; i < static_cast<std::size_t>(imageCount); i++)
+        {
+            VkImageViewCreateInfo imageViewCreateInfo;
+            populateImageViewCreateInfo(imageViewCreateInfo, this->images_[i]);
+                                        
+            if (vkCreateImageView(this->device_, &imageViewCreateInfo, nullptr, &this->imageViews_[i]) != VK_SUCCESS)
+                throw std::runtime_error("Failed to create image views!");
+        }
+    }
+
     void App::Device::destoryVulkanInstance() noexcept
     {
         vkDestroyInstance(this->instance_, nullptr);
@@ -244,6 +260,11 @@ namespace mgo
         vkDestroySwapchainKHR(this->device_, this->swapchain_, nullptr);
     }
     
+    void App::Device::destroyImageViews() noexcept
+    {
+        for (auto imageView : this->imageViews_)
+            vkDestroyImageView(this->device_, imageView, nullptr);
+    }
     
     std::uint8_t App::Device::rankPhysicalDevices(VkPhysicalDevice physicalDevice) const noexcept
     {
@@ -511,6 +532,26 @@ namespace mgo
             SwapchainCreateInfo.oldSwapchain             = VK_NULL_HANDLE;
         }
     }
+    
+    void App::Device::populateImageViewCreateInfo(VkImageViewCreateInfo& imageViewCreateInfo, VkImage image) const noexcept
+    {
+        imageViewCreateInfo.sType                            = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewCreateInfo.pNext                            = nullptr;
+        imageViewCreateInfo.flags                            = 0;
+        imageViewCreateInfo.image                            = image;
+        imageViewCreateInfo.viewType                         = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewCreateInfo.format                           = this->surfaceFormat_.format;
+        imageViewCreateInfo.components.r                     = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.g                     = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.b                     = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.components.a                     = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewCreateInfo.subresourceRange.aspectMask      = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageViewCreateInfo.subresourceRange.baseMipLevel    = 0;
+        imageViewCreateInfo.subresourceRange.levelCount      = 1;
+        imageViewCreateInfo.subresourceRange.baseArrayLayer  = 0;
+        imageViewCreateInfo.subresourceRange.layerCount      = 1;
+    }
+
     
     bool App::Device::checkValidationLayerSupport() const noexcept
     {
