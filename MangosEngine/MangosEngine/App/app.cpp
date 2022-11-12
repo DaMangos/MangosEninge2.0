@@ -136,7 +136,7 @@ namespace mgo
         if (vkCreateInstance(&createInfo, nullptr, &this->instance_) != VK_SUCCESS)
             throw std::runtime_error("Failed to create instance!");
     }
-    
+     
     void App::Device::createDebugMessenger()
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
@@ -449,8 +449,8 @@ namespace mgo
         deviceCreateInfo.pQueueCreateInfos          = QueueCreateInfos.data();
         deviceCreateInfo.enabledLayerCount          = 0;
         deviceCreateInfo.ppEnabledLayerNames        = nullptr;
-        deviceCreateInfo.enabledExtensionCount      = static_cast<std::uint32_t>(this->deviceExtensions.size());
-        deviceCreateInfo.ppEnabledExtensionNames    = this->deviceExtensions.data();
+        deviceCreateInfo.enabledExtensionCount      = static_cast<std::uint32_t>(this->deviceExtensions_.size());
+        deviceCreateInfo.ppEnabledExtensionNames    = this->deviceExtensions_.data();
         deviceCreateInfo.pEnabledFeatures           = pPhysicalDeviceFeatures;
 #endif
     }
@@ -718,7 +718,7 @@ namespace mgo
     
     App::Pipeline::Pipeline()
     {
-        this->createPipeline("shaders/vert.spv", "shaders/frag.spv");
+        this->createPipeline("MangosEngine/shaders/vert.spv", "MangosEngine/shaders/frag.spv");
     }
         
     std::vector<char> App::Pipeline::readFile(const std::string& filePath) const

@@ -113,6 +113,8 @@ namespace mgo
             
             void createImageViews();
             
+            void createGraphicsPipeline();
+
             void destoryVulkanInstance() noexcept;
             
             void destoryDebugMessenger() noexcept;
