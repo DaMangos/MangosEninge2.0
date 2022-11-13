@@ -2,7 +2,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -19,7 +18,6 @@
 #include <algorithm>
 #include <limits>
 #include <limits>
-
 #include <cstdint>
 #include <cstring>
 #include <cmath>
@@ -89,8 +87,11 @@ namespace mgo
             VkSwapchainKHR                  swapchain_;
             std::vector<VkImage>            images_;
             std::vector<VkImageView>        imageViews_;
+            VkRenderPass                    renderPass_;
+            VkPipelineLayout                pipelineLayout_;
+            VkPipeline                      pipeline_;
 
-            
+
             Device(const std::string& appName, const RenderWindow& window);
             
             ~Device();
@@ -114,6 +115,8 @@ namespace mgo
             void createImageViews();
             
             void createGraphicsPipeline();
+            
+            void createRenderPass();
 
             void destoryVulkanInstance() noexcept;
             
@@ -126,6 +129,10 @@ namespace mgo
             void destroySwapchain() noexcept;
             
             void destroyImageViews() noexcept;
+            
+            void destroyRenderPass() noexcept;
+
+            void destroyGraphicsPipeline() noexcept;
             
             std::uint8_t rankPhysicalDevices(VkPhysicalDevice physicalDevice) const noexcept;
                         
@@ -150,6 +157,62 @@ namespace mgo
             void populateSwapchainCreateInfoKHR(VkSwapchainCreateInfoKHR& SwapchainCreateInfo) const noexcept;
             
             void populateImageViewCreateInfo(VkImageViewCreateInfo& imageViewCreateInfo, VkImage image) const noexcept;
+            
+            void populateShaderModuleCreateInfo(VkShaderModuleCreateInfo& shaderModuleCreateInfo, const std::vector<char>& code) const noexcept;
+            
+            void populatePipelineShaderStageCreateInfo(VkPipelineShaderStageCreateInfo& pipelineShaderStageCreateInfo,
+                                                       VkShaderStageFlagBits shaderStageFlagBits,
+                                                       VkShaderModule shaderModule) const noexcept;
+            
+            void populatePipelineDynamicStateCreateInfo(VkPipelineDynamicStateCreateInfo& pipelineDynamicStateCreateInfo,
+                                                                     const std::vector<VkDynamicState>& dynamicStates) const noexcept;
+            
+            void populatePipelineVertexInputStateCreateInfo(VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo) const noexcept;
+            
+            void populatePipelineInputAssemblyStateCreateInfo(VkPipelineInputAssemblyStateCreateInfo& pipelineInputAssemblyStateCreateInfo) const noexcept;
+            
+            void populateViewport(VkViewport& viewport)const noexcept;
+
+            void populateRect2D(VkRect2D& rect2D) const noexcept;
+                        
+            void populatePipelineViewportStateCreateInfo(VkPipelineViewportStateCreateInfo& pipelineViewportStateCreateInfo,
+                                                         const VkViewport* pViewport, const VkRect2D* pScissor) const noexcept;
+            
+            void populatePipelineRasterizationStateCreateInfo(VkPipelineRasterizationStateCreateInfo& pipelineRasterizationStateCreateInfo) const noexcept;
+            
+            void populatePipelineMultisampleStateCreateInfo(VkPipelineMultisampleStateCreateInfo& pipelineMultisampleStateCreateInfo) const noexcept;
+            
+            void populatePipelineDepthStencilStateCreateInfo(VkPipelineDepthStencilStateCreateInfo& pipelineDepthStencilStateCreateInfo) const noexcept;
+            
+            void populatePipelineColorBlendAttachmentState(VkPipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState) const noexcept;
+            
+            void populatePipelineColorBlendStateCreateInfo(VkPipelineColorBlendStateCreateInfo& pipelineColorBlendStateCreateInfo,
+                                                           const VkPipelineColorBlendAttachmentState* pPipelineColorBlendAttachmentState) const noexcept;
+
+            void populatePipelineLayoutCreateInfo(VkPipelineLayoutCreateInfo& pipelineLayoutCreateInfo) const noexcept;
+            
+            void populateAttachmentDescription(VkAttachmentDescription& attachmentDescription) const noexcept;
+            
+            void populateAttachmentReference(VkAttachmentReference& attachmentReference) const noexcept;
+            
+            void populateSubpassDescription(VkSubpassDescription& subpassDescription,
+                                            const VkAttachmentReference* pColorAttachmentReference) const noexcept;
+
+            void populateRenderPassCreateInfo(VkRenderPassCreateInfo& renderPassCreateInfo,
+                                                           const std::vector<VkAttachmentDescription>& attachmentDescriptions,
+                                                           const std::vector<VkSubpassDescription>& subpassDescriptions) const noexcept;
+            
+            void populateGraphicsPipelineCreateInfo(VkGraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
+                                                    const std::vector<VkPipelineShaderStageCreateInfo>& pipelineShaderStageCreateInfos,
+                                                    const VkPipelineVertexInputStateCreateInfo* pPipelineVertexInputStateCreateInfo,
+                                                    const VkPipelineInputAssemblyStateCreateInfo* pPipelineInputAssemblyStateCreateInfo,
+                                                    const VkPipelineTessellationStateCreateInfo* pPipelineTessellationStateCreateInfo,
+                                                    const VkPipelineViewportStateCreateInfo* pPipelineViewportStateCreateInfo,
+                                                    const VkPipelineRasterizationStateCreateInfo* pPipelineRasterizationStateCreateInf,
+                                                    const VkPipelineMultisampleStateCreateInfo* pPipelineMultisampleStateCreateInfo,
+                                                    const VkPipelineDepthStencilStateCreateInfo* pPipelineDepthStencilStateCreateInfo,
+                                                    const VkPipelineColorBlendStateCreateInfo* pPipelineColorBlendStateCreateInfo,
+                                                    const VkPipelineDynamicStateCreateInfo* pPipelineDynamicStateCreateInfo) const noexcept;
             
             bool checkValidationLayerSupport() const noexcept;
 
@@ -178,25 +241,16 @@ namespace mgo
             void setupPresentMode() noexcept;
             
             void setupExtent(const RenderWindow& window) noexcept;
-        };
-        
-#pragma mark - App::Pipeline
-        class Pipeline final
-        {
-        private:
-            friend App;
-            
-            Pipeline();
             
             std::vector<char> readFile(const std::string& filePath) const;
             
-            void createPipeline(const std::string& fragFilePath, const std::string& vertFilePath);
+            VkShaderModule createShaderModule(const std::vector<char>& code);
         };
+    
         
         std::string appName_;
         RenderWindow window_;
         Device device_;
-        Pipeline pipeline_;
     public:
         App();
         

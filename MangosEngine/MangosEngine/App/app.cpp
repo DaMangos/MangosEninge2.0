@@ -74,10 +74,14 @@ namespace mgo
         this->createDevice();
         this->createSwapchain(window);
         this->createImageViews();
+        this->createRenderPass();
+        this->createGraphicsPipeline();
     }
     
     App::Device::~Device()
     {
+        this->destroyGraphicsPipeline();
+        this->destroyRenderPass();
         this->destroyImageViews();
         this->destroySwapchain();
         this->destroyDevice();
@@ -112,12 +116,12 @@ namespace mgo
     std::vector<const char*> App::Device::getdeviceExtensions() noexcept
     {
 #ifdef __APPLE__
-        return std::vector<const char*>({VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset"});
+        return std::vector<const char*>({VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_NV_GLSL_SHADER_EXTENSION_NAME, "VK_KHR_portability_subset"});
 #else
         return std::vector<const char*>({VK_KHR_SWAPCHAIN_EXTENSION_NAME});
 #endif
     }
-    
+
     void App::Device::createVulkanInstance()
     {
 #ifdef DEBUG
@@ -142,7 +146,8 @@ namespace mgo
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         this->populateDebugUtilsMessengerCreateInfoEXT(createInfo);
         
-        if (CreateDebugUtilsMessengerEXT(this->instance_, &createInfo, nullptr, &this->debugMessenger_) != VK_SUCCESS)
+        
+        if (vkCreateDebugUtilsMessengerEXT(this->instance_, &createInfo, nullptr, &this->debugMessenger_) != VK_SUCCESS)
             throw std::runtime_error("Failed to set up debug messenger!");
     }
     
@@ -234,6 +239,253 @@ namespace mgo
                 throw std::runtime_error("Failed to create image views!");
         }
     }
+    
+    void App::Device::createRenderPass()
+    {
+        VkAttachmentDescription colourDescription;
+        this->populateAttachmentDescription(colourDescription);
+        std::vector<VkAttachmentDescription> colourDescriptions = {colourDescription};
+        
+        VkAttachmentReference colourAttachment;
+        this->populateAttachmentReference(colourAttachment);
+        
+        VkSubpassDescription subpassDescription;
+        this->populateSubpassDescription(subpassDescription, &colourAttachment);
+        std::vector<VkSubpassDescription> subpassDescriptions = {subpassDescription};
+
+        VkRenderPassCreateInfo renderPassInfo;
+        this->populateRenderPassCreateInfo(renderPassInfo, colourDescriptions, subpassDescriptions);
+        
+        if (vkCreateRenderPass(this->device_, &renderPassInfo, nullptr, &this->renderPass_) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create render pass!");
+
+    }
+    
+    void App::Device::createGraphicsPipeline()
+    {
+        /*
+        VkShaderModuleCreateInfo vertShaderModuleCreateInfo;
+        this->populateShaderModuleCreateInfo(vertShaderModuleCreateInfo, this->readFile("MangosEngine/shaders/vert.spv"));
+        
+        VkShaderModule vertShaderModule;
+        if (vkCreateShaderModule(this->device_, &vertShaderModuleCreateInfo, nullptr, &vertShaderModule) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create vertex shader module!");
+        
+        
+        VkPipelineShaderStageCreateInfo vertPipelineShaderStageCreateInfo;
+        this->populatePipelineShaderStageCreateInfo(vertPipelineShaderStageCreateInfo,
+                                                    VK_SHADER_STAGE_VERTEX_BIT,
+                                                    vertShaderModule);
+        
+        VkShaderModuleCreateInfo fragShaderModuleCreateInfo;
+        this->populateShaderModuleCreateInfo(fragShaderModuleCreateInfo, this->readFile("MangosEngine/shaders/frag.spv"));
+        
+        VkShaderModule fragShaderModule;
+        if (vkCreateShaderModule(this->device_, &fragShaderModuleCreateInfo, nullptr, &fragShaderModule) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create fragment shader module!");
+        
+        
+        VkPipelineShaderStageCreateInfo fragPipelineShaderStageCreateInfo;
+        this->populatePipelineShaderStageCreateInfo(fragPipelineShaderStageCreateInfo,
+                                                    VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                    fragShaderModule);
+        
+    
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages = {vertPipelineShaderStageCreateInfo, fragPipelineShaderStageCreateInfo};
+        
+        std::vector<VkDynamicState> dynamicStates =
+        {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR
+        };
+
+        VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo;
+        this->populatePipelineDynamicStateCreateInfo(pipelineDynamicStateCreateInfo, dynamicStates);
+        
+        VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo;
+        this->populatePipelineLayoutCreateInfo(pipelineLayoutCreateInfo);
+        
+        if (vkCreatePipelineLayout(this->device_, &pipelineLayoutCreateInfo, nullptr, &this->pipelineLayout_) != VK_SUCCESS)
+            throw std::runtime_error("Failed to create pipeline layout!");
+        
+        
+        
+        
+        
+        VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo;
+        this->populatePipelineVertexInputStateCreateInfo(pipelineVertexInputStateCreateInfo);
+        
+        VkPipelineInputAssemblyStateCreateInfo populatePipelineInputAssemblyStateCreateInfo;
+        this->populatePipelineInputAssemblyStateCreateInfo(populatePipelineInputAssemblyStateCreateInfo);
+        
+        VkPipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo;
+        this->populatePipelineInputAssemblyStateCreateInfo(pipelineInputAssemblyStateCreateInfo);
+        
+        VkViewport viewport;
+        this->populateViewport(viewport);
+        VkRect2D scissor;
+        this->populateRect2D(scissor);
+        VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo;
+        this->populatePipelineViewportStateCreateInfo(pipelineViewportStateCreateInfo, &viewport, &scissor);
+        
+        VkPipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo;
+        this->populatePipelineRasterizationStateCreateInfo(pipelineRasterizationStateCreateInfo);
+        
+        VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo;
+        this->populatePipelineMultisampleStateCreateInfo(pipelineMultisampleStateCreateInfo);
+        
+        VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateCreateInfo;
+        this->populatePipelineDepthStencilStateCreateInfo(pipelineDepthStencilStateCreateInfo);
+        
+        VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState;
+        this->populatePipelineColorBlendAttachmentState(pipelineColorBlendAttachmentState);
+        VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo;
+        this->populatePipelineColorBlendStateCreateInfo(pipelineColorBlendStateCreateInfo, &pipelineColorBlendAttachmentState);
+        
+        VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo;
+        this->populateGraphicsPipelineCreateInfo(graphicsPipelineCreateInfo,
+                                                 shaderStages,
+                                                 &pipelineVertexInputStateCreateInfo,
+                                                 &pipelineInputAssemblyStateCreateInfo,
+                                                 nullptr,
+                                                 &pipelineViewportStateCreateInfo,
+                                                 &pipelineRasterizationStateCreateInfo,
+                                                 &pipelineMultisampleStateCreateInfo,
+                                                 &pipelineDepthStencilStateCreateInfo,
+                                                 &pipelineColorBlendStateCreateInfo,
+                                                 &pipelineDynamicStateCreateInfo);
+        
+        
+        vkDestroyShaderModule(this->device_, vertShaderModule, nullptr);
+        vkDestroyShaderModule(this->device_, fragShaderModule, nullptr);
+        
+        
+        -------------------------------------------------------------------------------- */
+        
+        auto vertShaderCode = readFile("MangosEngine/shaders/vert.spv");
+        auto fragShaderCode = readFile("MangosEngine/shaders/frag.spv");
+
+        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
+        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+
+        VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        vertShaderStageInfo.module = vertShaderModule;
+        vertShaderStageInfo.pName = "main";
+
+        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragShaderStageInfo.module = fragShaderModule;
+        fragShaderStageInfo.pName = "main";
+
+        VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+        vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputInfo.vertexBindingDescriptionCount = 0;
+        vertexInputInfo.vertexAttributeDescriptionCount = 0;
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+        VkPipelineViewportStateCreateInfo viewportState{};
+        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportState.viewportCount = 1;
+        viewportState.scissorCount = 1;
+
+        VkPipelineRasterizationStateCreateInfo rasterizer{};
+        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizer.depthClampEnable = VK_FALSE;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+        rasterizer.depthBiasEnable = VK_FALSE;
+
+        VkPipelineMultisampleStateCreateInfo multisampling{};
+        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment.blendEnable = VK_FALSE;
+
+        VkPipelineColorBlendStateCreateInfo colorBlending{};
+        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlending.logicOpEnable = VK_FALSE;
+        colorBlending.logicOp = VK_LOGIC_OP_COPY;
+        colorBlending.attachmentCount = 1;
+        colorBlending.pAttachments = &colorBlendAttachment;
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
+
+        std::vector<VkDynamicState> dynamicStates = {
+            VK_DYNAMIC_STATE_VIEWPORT,
+            VK_DYNAMIC_STATE_SCISSOR
+        };
+        VkPipelineDynamicStateCreateInfo dynamicState{};
+        dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+        dynamicState.pDynamicStates = dynamicStates.data();
+
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 0;
+        pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+        if (vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &pipelineLayout_) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create pipeline layout!");
+        }
+
+        VkGraphicsPipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        pipelineInfo.stageCount = 2;
+        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.pVertexInputState = &vertexInputInfo;
+        pipelineInfo.pInputAssemblyState = &inputAssembly;
+        pipelineInfo.pViewportState = &viewportState;
+        pipelineInfo.pRasterizationState = &rasterizer;
+        pipelineInfo.pMultisampleState = &multisampling;
+        pipelineInfo.pColorBlendState = &colorBlending;
+        pipelineInfo.pDynamicState = &dynamicState;
+        pipelineInfo.layout = pipelineLayout_;
+        pipelineInfo.renderPass = renderPass_;
+        pipelineInfo.subpass = 0;
+        pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+        if (vkCreateGraphicsPipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline_) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create graphics pipeline!");
+        }
+
+        vkDestroyShaderModule(device_, fragShaderModule, nullptr);
+        vkDestroyShaderModule(device_, vertShaderModule, nullptr);
+
+    }
+
+    VkShaderModule App::Device::createShaderModule(const std::vector<char>& code)
+    {
+        VkShaderModuleCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        createInfo.codeSize = code.size();
+        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+        VkShaderModule shaderModule;
+        if (vkCreateShaderModule(device_, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create shader module!");
+        }
+
+        return shaderModule;
+    }
+    /* -------------------------------------------------------------------------------- */
+
 
     void App::Device::destoryVulkanInstance() noexcept
     {
@@ -266,6 +518,17 @@ namespace mgo
             vkDestroyImageView(this->device_, imageView, nullptr);
     }
     
+    void App::Device::destroyGraphicsPipeline() noexcept
+    {
+        vkDestroyPipelineLayout(this->device_, this->pipelineLayout_, nullptr);
+        vkDestroyPipeline(this->device_, this->pipeline_, nullptr);
+    }
+    
+    void App::Device::destroyRenderPass() noexcept
+    {
+        vkDestroyRenderPass(this->device_, this->renderPass_, nullptr);
+    }
+
     std::uint8_t App::Device::rankPhysicalDevices(VkPhysicalDevice physicalDevice) const noexcept
     {
         std::uint8_t value = 0;
@@ -552,6 +815,244 @@ namespace mgo
         imageViewCreateInfo.subresourceRange.layerCount      = 1;
     }
 
+    void App::Device::populateShaderModuleCreateInfo(VkShaderModuleCreateInfo& shaderModuleCreateInfo, const std::vector<char>& code) const noexcept
+    {
+        shaderModuleCreateInfo.sType       = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModuleCreateInfo.pNext       = nullptr;
+        shaderModuleCreateInfo.flags       = 0;
+        shaderModuleCreateInfo.codeSize    = static_cast<std::uint32_t>(code.size());
+        shaderModuleCreateInfo.pCode       = reinterpret_cast<const uint32_t*>(code.data());
+    }
+    
+    void App::Device::populatePipelineShaderStageCreateInfo(VkPipelineShaderStageCreateInfo& pipelineShaderStageCreateInfo,
+                                                            VkShaderStageFlagBits shaderStageFlagBits,
+                                                            VkShaderModule shaderModule) const noexcept
+    {
+        pipelineShaderStageCreateInfo.sType                 = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        pipelineShaderStageCreateInfo.pNext                 = nullptr;
+        pipelineShaderStageCreateInfo.flags                 = 0;
+        pipelineShaderStageCreateInfo.stage                 = shaderStageFlagBits;
+        pipelineShaderStageCreateInfo.module                = shaderModule;
+        pipelineShaderStageCreateInfo.pName                 = "main";
+        pipelineShaderStageCreateInfo.pSpecializationInfo   = nullptr;
+    }
+
+    void App::Device::populatePipelineDynamicStateCreateInfo(VkPipelineDynamicStateCreateInfo& pipelineDynamicStateCreateInfo,
+                                                             const std::vector<VkDynamicState>& dynamicStates) const noexcept
+    {
+        pipelineDynamicStateCreateInfo.sType                = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        pipelineDynamicStateCreateInfo.pNext                = nullptr;
+        pipelineDynamicStateCreateInfo.flags                = 0;
+        pipelineDynamicStateCreateInfo.dynamicStateCount    = static_cast<std::uint32_t>(dynamicStates.size());
+        pipelineDynamicStateCreateInfo.pDynamicStates       = dynamicStates.data();
+    }
+    
+    void App::Device::populatePipelineVertexInputStateCreateInfo(VkPipelineVertexInputStateCreateInfo& pipelineVertexInputStateCreateInfo) const noexcept
+    {
+        pipelineVertexInputStateCreateInfo.sType                            = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        pipelineVertexInputStateCreateInfo.pNext                            = nullptr;
+        pipelineVertexInputStateCreateInfo.flags                            = 0;
+        pipelineVertexInputStateCreateInfo.vertexBindingDescriptionCount    = 0;
+        pipelineVertexInputStateCreateInfo.pVertexBindingDescriptions       = nullptr;
+        pipelineVertexInputStateCreateInfo.vertexAttributeDescriptionCount  = 0;
+        pipelineVertexInputStateCreateInfo.pVertexAttributeDescriptions     = nullptr;
+    }
+    
+    void App::Device::populatePipelineInputAssemblyStateCreateInfo(VkPipelineInputAssemblyStateCreateInfo& pipelineInputAssemblyStateCreateInfo) const noexcept
+    {
+        pipelineInputAssemblyStateCreateInfo.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        pipelineInputAssemblyStateCreateInfo.pNext                  = nullptr;
+        pipelineInputAssemblyStateCreateInfo.flags                  = 0;
+        pipelineInputAssemblyStateCreateInfo.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        pipelineInputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+    }
+
+    void App::Device::populateViewport(VkViewport& viewport) const noexcept
+    {
+        viewport.x          = 0.0f;
+        viewport.y          = 0.0f;
+        viewport.width      = static_cast<float>(this->extent_.width);
+        viewport.height     = static_cast<float>(this->extent_.height);
+        viewport.minDepth   = 0.0f;
+        viewport.maxDepth   = 1.0f;
+    }
+    
+    void App::Device::populateRect2D(VkRect2D& rect2D) const noexcept
+    {
+        rect2D.offset = {0, 0};
+        rect2D.extent = this->extent_;
+    }
+    
+    void App::Device::populatePipelineViewportStateCreateInfo(VkPipelineViewportStateCreateInfo& pipelineViewportStateCreateInfo,
+                                                              const VkViewport* pViewport, const VkRect2D* pScissor) const noexcept
+    {
+        pipelineViewportStateCreateInfo.sType           = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        pipelineViewportStateCreateInfo.pNext           = nullptr;
+        pipelineViewportStateCreateInfo.flags           = 0;
+        pipelineViewportStateCreateInfo.viewportCount   = 1;
+        pipelineViewportStateCreateInfo.pViewports      = pViewport;
+        pipelineViewportStateCreateInfo.scissorCount    = 1;
+        pipelineViewportStateCreateInfo.pScissors       = pScissor;
+    }
+    
+    void App::Device::populatePipelineRasterizationStateCreateInfo(VkPipelineRasterizationStateCreateInfo& pipelineRasterizationStateCreateInfo) const noexcept
+    {
+        pipelineRasterizationStateCreateInfo.sType                      = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        pipelineRasterizationStateCreateInfo.pNext                      = nullptr;
+        pipelineRasterizationStateCreateInfo.flags                      = 0;
+        pipelineRasterizationStateCreateInfo.depthClampEnable           = VK_FALSE;
+        pipelineRasterizationStateCreateInfo.rasterizerDiscardEnable    = VK_FALSE;
+        pipelineRasterizationStateCreateInfo.polygonMode                = VK_POLYGON_MODE_FILL;
+        pipelineRasterizationStateCreateInfo.cullMode                   = VK_CULL_MODE_BACK_BIT;
+        pipelineRasterizationStateCreateInfo.frontFace                  = VK_FRONT_FACE_CLOCKWISE;
+        pipelineRasterizationStateCreateInfo.depthBiasEnable            = VK_FALSE;
+        pipelineRasterizationStateCreateInfo.depthBiasConstantFactor    = 0.0f;
+        pipelineRasterizationStateCreateInfo.depthBiasClamp             = 0.0f;
+        pipelineRasterizationStateCreateInfo.depthBiasSlopeFactor       = 0.0f;
+        pipelineRasterizationStateCreateInfo.lineWidth                  = 1.0f;
+    }
+    
+    void App::Device::populatePipelineMultisampleStateCreateInfo(VkPipelineMultisampleStateCreateInfo& pipelineMultisampleStateCreateInfo) const noexcept
+    {
+        pipelineMultisampleStateCreateInfo.sType                    = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        pipelineMultisampleStateCreateInfo.pNext                    = nullptr;
+        pipelineMultisampleStateCreateInfo.flags                    = 0;
+        pipelineMultisampleStateCreateInfo.rasterizationSamples     = VK_SAMPLE_COUNT_1_BIT;
+        pipelineMultisampleStateCreateInfo.sampleShadingEnable      = VK_FALSE;
+        pipelineMultisampleStateCreateInfo.minSampleShading         = 1.0f;
+        pipelineMultisampleStateCreateInfo.pSampleMask              = nullptr;
+        pipelineMultisampleStateCreateInfo.alphaToCoverageEnable    = VK_FALSE;
+        pipelineMultisampleStateCreateInfo.alphaToOneEnable         = VK_FALSE;
+    }
+    
+    void App::Device::populatePipelineDepthStencilStateCreateInfo(VkPipelineDepthStencilStateCreateInfo& pipelineDepthStencilStateCreateInfo) const noexcept
+    {
+        // needs impermentation!
+    }
+    
+    void App::Device::populatePipelineColorBlendAttachmentState(VkPipelineColorBlendAttachmentState& pipelineColorBlendAttachmentState) const noexcept
+    {
+        pipelineColorBlendAttachmentState.blendEnable           = VK_TRUE;
+        pipelineColorBlendAttachmentState.srcColorBlendFactor   = VK_BLEND_FACTOR_SRC_ALPHA;
+        pipelineColorBlendAttachmentState.dstColorBlendFactor   = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        pipelineColorBlendAttachmentState.colorBlendOp          = VK_BLEND_OP_ADD;
+        pipelineColorBlendAttachmentState.srcAlphaBlendFactor   = VK_BLEND_FACTOR_ONE;
+        pipelineColorBlendAttachmentState.dstAlphaBlendFactor   = VK_BLEND_FACTOR_ZERO;
+        pipelineColorBlendAttachmentState.alphaBlendOp          = VK_BLEND_OP_ADD;
+        pipelineColorBlendAttachmentState.colorWriteMask        = VK_COLOR_COMPONENT_R_BIT |
+                                                                  VK_COLOR_COMPONENT_G_BIT |
+                                                                  VK_COLOR_COMPONENT_B_BIT |
+                                                                  VK_COLOR_COMPONENT_A_BIT;
+    }
+    
+    void App::Device::populatePipelineColorBlendStateCreateInfo(VkPipelineColorBlendStateCreateInfo& pipelineColorBlendStateCreateInfo,
+                                                                const VkPipelineColorBlendAttachmentState* pPipelineColorBlendAttachmentState) const noexcept
+    {
+        pipelineColorBlendStateCreateInfo.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        pipelineColorBlendStateCreateInfo.pNext             = nullptr;
+        pipelineColorBlendStateCreateInfo.flags             = 0;
+        pipelineColorBlendStateCreateInfo.logicOpEnable     = VK_FALSE;
+        pipelineColorBlendStateCreateInfo.logicOp           = VK_LOGIC_OP_COPY;
+        pipelineColorBlendStateCreateInfo.attachmentCount   = 1;
+        pipelineColorBlendStateCreateInfo.pAttachments      = pPipelineColorBlendAttachmentState;
+        pipelineColorBlendStateCreateInfo.blendConstants[0] = 0.0f;
+        pipelineColorBlendStateCreateInfo.blendConstants[1] = 0.0f;
+        pipelineColorBlendStateCreateInfo.blendConstants[2] = 0.0f;
+        pipelineColorBlendStateCreateInfo.blendConstants[3] = 0.0f;
+    }
+
+    void App::Device::populatePipelineLayoutCreateInfo(VkPipelineLayoutCreateInfo& pipelineLayoutCreateInfo) const noexcept
+    {
+        pipelineLayoutCreateInfo.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutCreateInfo.pNext                  = nullptr;
+        pipelineLayoutCreateInfo.flags                  = 0;
+        pipelineLayoutCreateInfo.setLayoutCount         = 0;
+        pipelineLayoutCreateInfo.pSetLayouts            = nullptr;
+        pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+        pipelineLayoutCreateInfo.pPushConstantRanges    = nullptr;
+    }
+    
+    void App::Device::populateAttachmentDescription(VkAttachmentDescription& attachmentDescription) const noexcept
+    {
+        attachmentDescription.flags           = 0;
+        attachmentDescription.format          = this->surfaceFormat_.format;;
+        attachmentDescription.samples         = VK_SAMPLE_COUNT_1_BIT;
+        attachmentDescription.loadOp          = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachmentDescription.storeOp         = VK_ATTACHMENT_STORE_OP_STORE;
+        attachmentDescription.stencilLoadOp   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachmentDescription.stencilStoreOp  = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachmentDescription.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachmentDescription.finalLayout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    }
+    
+    void App::Device::populateAttachmentReference(VkAttachmentReference& attachmentReference) const noexcept
+    {
+        attachmentReference.attachment  = 0;
+        attachmentReference.layout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+    
+    void App::Device::populateSubpassDescription(VkSubpassDescription& subpassDescription,
+                                                 const VkAttachmentReference* pColorAttachmentReference) const noexcept
+    {
+        subpassDescription.flags                    = 0;
+        subpassDescription.pipelineBindPoint        = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        subpassDescription.inputAttachmentCount     = 0;
+        subpassDescription.pInputAttachments        = nullptr;
+        subpassDescription.colorAttachmentCount     = 1;
+        subpassDescription.pColorAttachments        = pColorAttachmentReference;
+        subpassDescription.pResolveAttachments      = nullptr;
+        subpassDescription.pDepthStencilAttachment  = nullptr;
+        subpassDescription.preserveAttachmentCount  = 0;
+        subpassDescription.pPreserveAttachments     = nullptr;
+    }
+    
+    void App::Device::populateRenderPassCreateInfo(VkRenderPassCreateInfo& renderPassCreateInfo,
+                                                   const std::vector<VkAttachmentDescription>& attachmentDescriptions,
+                                                   const std::vector<VkSubpassDescription>& subpassDescriptions) const noexcept
+    {
+        renderPassCreateInfo.sType              = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        renderPassCreateInfo.pNext              = nullptr;
+        renderPassCreateInfo.flags              = 0;
+        renderPassCreateInfo.attachmentCount    = static_cast<std::uint32_t>(attachmentDescriptions.size());
+        renderPassCreateInfo.pAttachments       = attachmentDescriptions.data();
+        renderPassCreateInfo.subpassCount       = static_cast<std::uint32_t>(subpassDescriptions.size());
+        renderPassCreateInfo.pSubpasses         = subpassDescriptions.data();
+        renderPassCreateInfo.dependencyCount    = 0;
+        renderPassCreateInfo.pDependencies      = nullptr;
+    }
+    
+    void App::Device::populateGraphicsPipelineCreateInfo(VkGraphicsPipelineCreateInfo& graphicsPipelineCreateInfo,
+                                                         const std::vector<VkPipelineShaderStageCreateInfo>& pipelineShaderStageCreateInfos,
+                                                         const VkPipelineVertexInputStateCreateInfo* pPipelineVertexInputStateCreateInfo,
+                                                         const VkPipelineInputAssemblyStateCreateInfo* pPipelineInputAssemblyStateCreateInfo,
+                                                         const VkPipelineTessellationStateCreateInfo* pPipelineTessellationStateCreateInfo,
+                                                         const VkPipelineViewportStateCreateInfo* pPipelineViewportStateCreateInfo,
+                                                         const VkPipelineRasterizationStateCreateInfo* pPipelineRasterizationStateCreateInf,
+                                                         const VkPipelineMultisampleStateCreateInfo* pPipelineMultisampleStateCreateInfo,
+                                                         const VkPipelineDepthStencilStateCreateInfo* pPipelineDepthStencilStateCreateInfo,
+                                                         const VkPipelineColorBlendStateCreateInfo* pPipelineColorBlendStateCreateInfo,
+                                                         const VkPipelineDynamicStateCreateInfo* pPipelineDynamicStateCreateInfo) const noexcept
+    {
+        graphicsPipelineCreateInfo.sType                = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        graphicsPipelineCreateInfo.pNext                = nullptr;
+        graphicsPipelineCreateInfo.flags                = 0;
+        graphicsPipelineCreateInfo.stageCount           = static_cast<std::uint32_t>(pipelineShaderStageCreateInfos.size());
+        graphicsPipelineCreateInfo.pStages              = pipelineShaderStageCreateInfos.data();
+        graphicsPipelineCreateInfo.pVertexInputState    = pPipelineVertexInputStateCreateInfo;
+        graphicsPipelineCreateInfo.pInputAssemblyState  = pPipelineInputAssemblyStateCreateInfo;
+        graphicsPipelineCreateInfo.pTessellationState   = pPipelineTessellationStateCreateInfo;
+        graphicsPipelineCreateInfo.pViewportState       = pPipelineViewportStateCreateInfo;
+        graphicsPipelineCreateInfo.pRasterizationState  = pPipelineRasterizationStateCreateInf;
+        graphicsPipelineCreateInfo.pMultisampleState    = pPipelineMultisampleStateCreateInfo;
+        graphicsPipelineCreateInfo.pDepthStencilState   = pPipelineDepthStencilStateCreateInfo;
+        graphicsPipelineCreateInfo.pColorBlendState     = pPipelineColorBlendStateCreateInfo;
+        graphicsPipelineCreateInfo.pDynamicState        = pPipelineDynamicStateCreateInfo;
+        graphicsPipelineCreateInfo.layout               = this->pipelineLayout_;
+        graphicsPipelineCreateInfo.renderPass           = this->renderPass_;
+        graphicsPipelineCreateInfo.subpass              = 0;
+        graphicsPipelineCreateInfo.basePipelineHandle   = VK_NULL_HANDLE;
+        graphicsPipelineCreateInfo.basePipelineIndex    = -1;
+    }
     
     bool App::Device::checkValidationLayerSupport() const noexcept
     {
@@ -712,16 +1213,8 @@ namespace mgo
             std::clamp(window.GetFramebufferSize().height, this->surfaceCapabilities_.minImageExtent.height, this->surfaceCapabilities_.maxImageExtent.height)
         };
     }
-
-        
-#pragma mark - App::Pipeline
     
-    App::Pipeline::Pipeline()
-    {
-        this->createPipeline("MangosEngine/shaders/vert.spv", "MangosEngine/shaders/frag.spv");
-    }
-        
-    std::vector<char> App::Pipeline::readFile(const std::string& filePath) const
+    std::vector<char> App::Device::readFile(const std::string& filePath) const
     {
         std::ifstream fileStream(filePath, std::ios::ate | std::ios::binary);
         
@@ -737,12 +1230,6 @@ namespace mgo
         
         return buffer;
     }
-    
-    void App::Pipeline::createPipeline(const std::string& vertFilePath, const std::string& fragFilePath)
-    {
-        std::cout << this->readFile(vertFilePath).size() << std::endl;
-        std::cout << this->readFile(fragFilePath).size() << std::endl;
-    }
             
 
 #pragma mark - App
@@ -750,8 +1237,7 @@ namespace mgo
     :
     appName_("Mangos"),
     window_(this->appName_, 500, 500),
-    device_(this->appName_, this->window_),
-    pipeline_()
+    device_(this->appName_, this->window_)
     {}
     
     App::~App()
