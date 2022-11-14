@@ -220,12 +220,12 @@ namespace mgo
             
             bool checkDeviceExtensionSupport(VkPhysicalDevice physicalDevice) const noexcept;
             
-            static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance,
+            static VkResult createDebugUtilsMessengerEXT(VkInstance instance,
                                                          const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
                                                          const VkAllocationCallbacks* pAllocator,
                                                          VkDebugUtilsMessengerEXT* pDebugMessenger) noexcept;
 
-            static void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+            static void destroyDebugUtilsMessengerEXT(VkInstance instance,
                                                       VkDebugUtilsMessengerEXT debugMessenger,
                                                       const VkAllocationCallbacks* pAllocator) noexcept;
             

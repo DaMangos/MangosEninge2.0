@@ -147,7 +147,7 @@ namespace mgo
         this->populateDebugUtilsMessengerCreateInfoEXT(createInfo);
         
         
-        if (vkCreateDebugUtilsMessengerEXT(this->instance_, &createInfo, nullptr, &this->debugMessenger_) != VK_SUCCESS)
+        if (App::Device::createDebugUtilsMessengerEXT(this->instance_, &createInfo, nullptr, &this->debugMessenger_) != VK_SUCCESS)
             throw std::runtime_error("Failed to set up debug messenger!");
     }
     
@@ -179,6 +179,10 @@ namespace mgo
         this->physicalDevice_ = phyicalDevicesCandidates.begin()->second;
         
         this->populateQueueFamilyIndices(this->indices_, this->physicalDevice_, this->surface_, 1.0f);
+        
+        
+        
+        
         
         if (!this->indices_.graphicsFamily_.has_value() && !this->indices_.presentFamily_.has_value())
             throw std::runtime_error("failed to find queue family!");
@@ -494,7 +498,7 @@ namespace mgo
     
     void App::Device::destoryDebugMessenger() noexcept
     {
-        this->DestroyDebugUtilsMessengerEXT(this->instance_, this->debugMessenger_, nullptr);
+        App::Device::destroyDebugUtilsMessengerEXT(this->instance_, this->debugMessenger_, nullptr);
     }
     
     void App::Device::destroySurface() noexcept
@@ -1141,7 +1145,7 @@ namespace mgo
         return allPropertiesFound;
     }
     
-    VkResult App::Device::CreateDebugUtilsMessengerEXT(VkInstance instance,
+    VkResult App::Device::createDebugUtilsMessengerEXT(VkInstance instance,
                                                        const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
                                                        const VkAllocationCallbacks* pAllocator,
                                                        VkDebugUtilsMessengerEXT* pDebugMessenger) noexcept
@@ -1154,7 +1158,7 @@ namespace mgo
         
     }
     
-    void App::Device::DestroyDebugUtilsMessengerEXT(VkInstance instance,
+    void App::Device::destroyDebugUtilsMessengerEXT(VkInstance instance,
                                                     VkDebugUtilsMessengerEXT debugMessenger,
                                                     const VkAllocationCallbacks* pAllocator) noexcept
     {

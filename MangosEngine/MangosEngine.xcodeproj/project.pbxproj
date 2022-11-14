@@ -16,6 +16,7 @@
 		FFC833C0291FD0D500EC7039 /* shader.frag in Sources */ = {isa = PBXBuildFile; fileRef = FF29E764290AD6D500230659 /* shader.frag */; };
 		FFC833C2291FECFC00EC7039 /* shader.vert in Sources */ = {isa = PBXBuildFile; fileRef = FF29E763290AD6B200230659 /* shader.vert */; };
 		FFC833CD292159DF00EC7039 /* vulkan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC833CB292159DF00EC7039 /* vulkan.cpp */; };
+		FFC833D42921A47700EC7039 /* glfw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC833D22921A47700EC7039 /* glfw.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -78,6 +79,8 @@
 		FFC833CC292159DF00EC7039 /* vulkan.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = vulkan.hpp; sourceTree = "<group>"; };
 		FFC833CF292159FB00EC7039 /* shader.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.frag; sourceTree = "<group>"; };
 		FFC833D129215A4200EC7039 /* shader.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.vert; sourceTree = "<group>"; };
+		FFC833D22921A47700EC7039 /* glfw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glfw.cpp; sourceTree = "<group>"; };
+		FFC833D32921A47700EC7039 /* glfw.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glfw.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -173,6 +176,8 @@
 		FFC833C62921585E00EC7039 /* GLFW */ = {
 			isa = PBXGroup;
 			children = (
+				FFC833D22921A47700EC7039 /* glfw.cpp */,
+				FFC833D32921A47700EC7039 /* glfw.hpp */,
 			);
 			path = GLFW;
 			sourceTree = "<group>";
@@ -258,6 +263,7 @@
 				FFC833C0291FD0D500EC7039 /* shader.frag in Sources */,
 				FF31C0DC28F71F5F00967CB1 /* main.cpp in Sources */,
 				FF29E773290D975300230659 /* app.cpp in Sources */,
+				FFC833D42921A47700EC7039 /* glfw.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
