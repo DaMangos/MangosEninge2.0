@@ -1,0 +1,471 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FF29E773290D975300230659 /* app.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF29E771290D975300230659 /* app.cpp */; };
+		FF31C0DC28F71F5F00967CB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FF31C0DB28F71F5F00967CB1 /* main.cpp */; };
+		FF31C0ED28F7215600967CB1 /* libvulkan.1.3.216.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */; };
+		FF31C0EE28F7215C00967CB1 /* libvulkan.1.3.216.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		FF31C0F028F7217B00967CB1 /* libglfw.3.3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = FF31C0EF28F7217B00967CB1 /* libglfw.3.3.dylib */; };
+		FF31C0F128F7218000967CB1 /* libglfw.3.3.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = FF31C0EF28F7217B00967CB1 /* libglfw.3.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		FFC833C0291FD0D500EC7039 /* shader.frag in Sources */ = {isa = PBXBuildFile; fileRef = FF29E764290AD6D500230659 /* shader.frag */; };
+		FFC833C2291FECFC00EC7039 /* shader.vert in Sources */ = {isa = PBXBuildFile; fileRef = FF29E763290AD6B200230659 /* shader.vert */; };
+		FFC833CD292159DF00EC7039 /* vulkan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC833CB292159DF00EC7039 /* vulkan.cpp */; };
+		FFC833D42921A47700EC7039 /* glfw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC833D22921A47700EC7039 /* glfw.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildRule section */
+		FFC833C3291FEEED00EC7039 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.vert";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILE_DIR)/$SRCROOT/MangosEngine/Vulkan/SPIR-V/vert.spv",
+			);
+			outputFilesCompilerFlags = (
+				"-o",
+			);
+			script = "/Applications/VulkanSDK/macOS/bin/glslc $SRCROOT/MangosEngine/Vulkan/GLSL/*.vert -o $SRCROOT/MangosEngine/Vulkan/SPIR-V/vert.spv\n";
+		};
+		FFC833C4291FF04800EC7039 /* PBXBuildRule */ = {
+			isa = PBXBuildRule;
+			compilerSpec = com.apple.compilers.proxy.script;
+			filePatterns = "*.frag";
+			fileType = pattern.proxy;
+			inputFiles = (
+			);
+			isEditable = 1;
+			outputFiles = (
+				"$(DERIVED_FILE_DIR)/$SRCROOT/MangosEngine/Vulkan/SPIR-V/frag.spv",
+			);
+			script = "/Applications/VulkanSDK/macOS/bin/glslc $SRCROOT/MangosEngine/Vulkan/GLSL/*.frag -o $SRCROOT/MangosEngine/Vulkan/SPIR-V/frag.spv\n";
+		};
+/* End PBXBuildRule section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FF31C0D628F71F5F00967CB1 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				FF31C0F128F7218000967CB1 /* libglfw.3.3.dylib in CopyFiles */,
+				FF31C0EE28F7215C00967CB1 /* libvulkan.1.3.216.dylib in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		FF29E763290AD6B200230659 /* shader.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; name = shader.vert; path = MangosEngine/Shaders/shader.vert; sourceTree = SOURCE_ROOT; };
+		FF29E764290AD6D500230659 /* shader.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.frag; sourceTree = "<group>"; };
+		FF29E771290D975300230659 /* app.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = app.cpp; sourceTree = "<group>"; };
+		FF29E772290D975300230659 /* app.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = app.hpp; sourceTree = "<group>"; };
+		FF31C0D828F71F5F00967CB1 /* MangosEngine */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = MangosEngine; sourceTree = BUILT_PRODUCTS_DIR; };
+		FF31C0DB28F71F5F00967CB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		FF31C0E228F71F6300967CB1 /* MangosEngine.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MangosEngine.entitlements; sourceTree = "<group>"; };
+		FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libvulkan.1.3.216.dylib; path = ../../../../../Applications/VulkanSDK/macOS/lib/libvulkan.1.3.216.dylib; sourceTree = "<group>"; };
+		FF31C0EF28F7217B00967CB1 /* libglfw.3.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.3.dylib; path = ../../../../../opt/homebrew/Cellar/glfw/3.3.8/lib/libglfw.3.3.dylib; sourceTree = "<group>"; };
+		FFC833CB292159DF00EC7039 /* vulkan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vulkan.cpp; sourceTree = "<group>"; };
+		FFC833CC292159DF00EC7039 /* vulkan.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = vulkan.hpp; sourceTree = "<group>"; };
+		FFC833CF292159FB00EC7039 /* shader.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.frag; sourceTree = "<group>"; };
+		FFC833D129215A4200EC7039 /* shader.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = shader.vert; sourceTree = "<group>"; };
+		FFC833D22921A47700EC7039 /* glfw.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = glfw.cpp; sourceTree = "<group>"; };
+		FFC833D32921A47700EC7039 /* glfw.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = glfw.hpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FF31C0D528F71F5F00967CB1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FF31C0F028F7217B00967CB1 /* libglfw.3.3.dylib in Frameworks */,
+				FF31C0ED28F7215600967CB1 /* libvulkan.1.3.216.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FF29E75E290AC96400230659 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				FF29E771290D975300230659 /* app.cpp */,
+				FF29E772290D975300230659 /* app.hpp */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		FF29E762290AD66600230659 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				FF29E763290AD6B200230659 /* shader.vert */,
+				FF29E764290AD6D500230659 /* shader.frag */,
+			);
+			name = Shaders;
+			path = MangosEngine/Shaders;
+			sourceTree = SOURCE_ROOT;
+		};
+		FF31C0CF28F71F5F00967CB1 = {
+			isa = PBXGroup;
+			children = (
+				FF31C0F228F7260300967CB1 /* Resources */,
+				FF31C0DA28F71F5F00967CB1 /* MangosEngine */,
+				FF31C0D928F71F5F00967CB1 /* Products */,
+				FF31C0E528F7204A00967CB1 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		FF31C0D928F71F5F00967CB1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FF31C0D828F71F5F00967CB1 /* MangosEngine */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FF31C0DA28F71F5F00967CB1 /* MangosEngine */ = {
+			isa = PBXGroup;
+			children = (
+				FF29E762290AD66600230659 /* Shaders */,
+				FFC833C62921585E00EC7039 /* GLFW */,
+				FFC833C52921584500EC7039 /* Vulkan */,
+				FF29E75E290AC96400230659 /* App */,
+				FF31C0E228F71F6300967CB1 /* MangosEngine.entitlements */,
+				FF31C0DB28F71F5F00967CB1 /* main.cpp */,
+			);
+			path = MangosEngine;
+			sourceTree = "<group>";
+		};
+		FF31C0E528F7204A00967CB1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				FF31C0EF28F7217B00967CB1 /* libglfw.3.3.dylib */,
+				FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FF31C0F228F7260300967CB1 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		FFC833C52921584500EC7039 /* Vulkan */ = {
+			isa = PBXGroup;
+			children = (
+				FFC833C92921592D00EC7039 /* SPIR-V */,
+				FFC833C7292158BB00EC7039 /* GLSL */,
+				FFC833CB292159DF00EC7039 /* vulkan.cpp */,
+				FFC833CC292159DF00EC7039 /* vulkan.hpp */,
+			);
+			path = Vulkan;
+			sourceTree = "<group>";
+		};
+		FFC833C62921585E00EC7039 /* GLFW */ = {
+			isa = PBXGroup;
+			children = (
+				FFC833D22921A47700EC7039 /* glfw.cpp */,
+				FFC833D32921A47700EC7039 /* glfw.hpp */,
+			);
+			path = GLFW;
+			sourceTree = "<group>";
+		};
+		FFC833C7292158BB00EC7039 /* GLSL */ = {
+			isa = PBXGroup;
+			children = (
+				FFC833D129215A4200EC7039 /* shader.vert */,
+				FFC833CF292159FB00EC7039 /* shader.frag */,
+			);
+			name = GLSL;
+			path = MangosEngine/Vulkan/GLSL;
+			sourceTree = SOURCE_ROOT;
+		};
+		FFC833C92921592D00EC7039 /* SPIR-V */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "SPIR-V";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FF31C0D728F71F5F00967CB1 /* MangosEngine */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF31C0DF28F71F5F00967CB1 /* Build configuration list for PBXNativeTarget "MangosEngine" */;
+			buildPhases = (
+				FF31C0D628F71F5F00967CB1 /* CopyFiles */,
+				FF31C0D428F71F5F00967CB1 /* Sources */,
+				FF31C0D528F71F5F00967CB1 /* Frameworks */,
+			);
+			buildRules = (
+				FFC833C3291FEEED00EC7039 /* PBXBuildRule */,
+				FFC833C4291FF04800EC7039 /* PBXBuildRule */,
+			);
+			dependencies = (
+			);
+			name = MangosEngine;
+			productName = MangosEngine;
+			productReference = FF31C0D828F71F5F00967CB1 /* MangosEngine */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FF31C0D028F71F5F00967CB1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1410;
+				TargetAttributes = {
+					FF31C0D728F71F5F00967CB1 = {
+						CreatedOnToolsVersion = 14.0.1;
+					};
+				};
+			};
+			buildConfigurationList = FF31C0D328F71F5F00967CB1 /* Build configuration list for PBXProject "MangosEngine" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = FF31C0CF28F71F5F00967CB1;
+			productRefGroup = FF31C0D928F71F5F00967CB1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FF31C0D728F71F5F00967CB1 /* MangosEngine */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FF31C0D428F71F5F00967CB1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FFC833C2291FECFC00EC7039 /* shader.vert in Sources */,
+				FFC833CD292159DF00EC7039 /* vulkan.cpp in Sources */,
+				FFC833C0291FD0D500EC7039 /* shader.frag in Sources */,
+				FF31C0DC28F71F5F00967CB1 /* main.cpp in Sources */,
+				FF29E773290D975300230659 /* app.cpp in Sources */,
+				FFC833D42921A47700EC7039 /* glfw.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		FF31C0DD28F71F5F00967CB1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		FF31C0DE28F71F5F00967CB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		FF31C0E028F71F5F00967CB1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = MangosEngine/MangosEngine.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = H3Y29BCYSK;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				HEADER_SEARCH_PATHS = (
+					/opt/homebrew/include,
+					/Applications/VulkanSDK/macOS/include,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/homebrew/lib,
+					/Applications/VulkanSDK/macOS/lib,
+					/opt/homebrew/Cellar/glfw/3.3.8/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = YES;
+			};
+			name = Debug;
+		};
+		FF31C0E128F71F5F00967CB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = MangosEngine/MangosEngine.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = H3Y29BCYSK;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = "compiler-default";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = "";
+				HEADER_SEARCH_PATHS = (
+					/opt/homebrew/include,
+					/Applications/VulkanSDK/macOS/include,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					/opt/homebrew/lib,
+					/Applications/VulkanSDK/macOS/lib,
+					/opt/homebrew/Cellar/glfw/3.3.8/lib,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.3;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USE_HEADERMAP = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FF31C0D328F71F5F00967CB1 /* Build configuration list for PBXProject "MangosEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FF31C0DD28F71F5F00967CB1 /* Debug */,
+				FF31C0DE28F71F5F00967CB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FF31C0DF28F71F5F00967CB1 /* Build configuration list for PBXNativeTarget "MangosEngine" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FF31C0E028F71F5F00967CB1 /* Debug */,
+				FF31C0E128F71F5F00967CB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FF31C0D028F71F5F00967CB1 /* Project object */;
+}
