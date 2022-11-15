@@ -1,19 +1,10 @@
 #include "vulkan.hpp"
-
-#pragma mark - MGO_LOG(message)
-#ifndef MGO_LOG
-#ifdef DEBUG
-#define MGO_LOG(message) std::cerr << message << std::endl
-#else
-#define MGO_LOG(message)
-#endif
-#endif
 namespace mgo
 {
     namespace vk
     {
 #pragma mark - mgo::vk::layers
-#ifdef DEBUGß
+#ifdef DEBUG
         const std::vector<const char*> layers = {"VK_LAYER_KHRONOS_validation"};
 #define MGO_VK_ENABLED_LAYERS_COUNT static_cast<std::uint32_t>(vk::layers.size())
 #define MGO_VK_ENABLED_LAYERS_NAME vk::layers.data()
@@ -103,8 +94,6 @@ namespace mgo
                     MGO_LOG("mgo::vk::Instance extension NOT supported: " << requiredProperty);
                 allPropertiesFound = propertyFound ? allPropertiesFound : false;
             }
-            if (allPropertiesFound)
-                MGO_LOG("All mgo::vk::Instance extensions are supported!");
         }
         
         VkApplicationInfo Instance::getVkApplicationInfo() const noexcept
@@ -214,13 +203,13 @@ namespace mgo
         {
             if (this->window_.createSurface(this->instance_.get(), &this->surface_) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create mgo::vk::Surface");
-            MGO_LOG("Created mgo::vk::Surface");
+            MGO_LOG("Created mgo::vk::Surface!");
         }
         
         Surface::~Surface() noexcept
         {
             vkDestroySurfaceKHR(this->instance_.get(), this->surface_, nullptr);
-            MGO_LOG("Destoryed mgo::vk::Surface");
+            MGO_LOG("Destoryed mgo::vk::Surface!");
         }
         
         VkSurfaceKHR Surface::get() const noexcept
@@ -303,6 +292,8 @@ namespace mgo
             
             this->physicalDevice_ = physicalDevicesCandidates.begin()->second;
             MGO_LOG("Created mgo::vk::PhysicalDevice!");
+            
+            this->queueFamilyIndices_ = findQueueFamilyIndices(this->physicalDevice_, this->surface_.get(), 1.0f);
         }
         
         PhysicalDevice::~PhysicalDevice() noexcept
@@ -460,8 +451,6 @@ namespace mgo
                     MGO_LOG("mgo::vk::PhysicalDevice extension NOT supported: " << requiredProperty);
                 allPropertiesFound = propertyFound ? allPropertiesFound : false;
             }
-            if (allPropertiesFound  && logResults)
-                MGO_LOG("All mgo::vk::PhysicalDevice extensions are supported!");
             return allPropertiesFound;
         }
         
@@ -566,9 +555,9 @@ namespace mgo
             VkPresentModeKHR presentMode                    = this->surface_.getVkPresentModeKHR(this->physicalDevice_);
             VkExtent2D extent                               = this->surface_.getVkExtent2D(this->physicalDevice_);
             
-            std::vector<std::uint32_t> queueFamilyIndices(this->physicalDevice_.getUniqueQueueFamilyIndices().families_.begin(),
-                                                          this->physicalDevice_.getUniqueQueueFamilyIndices().families_.end());
-            
+            std::set<std::uint32_t> UniqueQueueFamilyIndices = this->physicalDevice_.getUniqueQueueFamilyIndices().families_;
+            std::vector<std::uint32_t> queueFamilyIndices(UniqueQueueFamilyIndices.begin(), UniqueQueueFamilyIndices.end());
+                
             std::uint32_t minImageCount =
             surfaceCapabilities.maxImageCount > 0 &&
             surfaceCapabilities.minImageCount + 1 > surfaceCapabilities.maxImageCount ?
@@ -690,13 +679,13 @@ namespace mgo
             
             if (vkCreateRenderPass(this->device_.get(), &renderPassCreateInfo, nullptr, &this->renderPass_) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create mgo::vk::RenderPass!");
-            MGO_LOG("Created mgo::vk::RenderPass");
+            MGO_LOG("Created mgo::vk::RenderPass!");
         }
         
         RenderPass::~RenderPass() noexcept
         {
             vkDestroyRenderPass(this->device_.get(), this->renderPass_, nullptr);
-            MGO_LOG("Destroyed mgo::vk::RenderPass");
+            MGO_LOG("Destroyed mgo::vk::RenderPass!");
         }
         
         VkRenderPass RenderPass::get() const noexcept
@@ -759,13 +748,13 @@ namespace mgo
             
             if (vkCreatePipelineLayout(this->device_.get(), &pipelineLayoutCreateInfo, nullptr, &this->pipelineLayout_) != VK_SUCCESS)
                 throw std::runtime_error("Failed to create mgo::vk::PipelineLayout!");
-            MGO_LOG("Created mgo::vk::PipelineLayout");
+            MGO_LOG("Created mgo::vk::PipelineLayout!");
         }
             
         PipelineLayout::~PipelineLayout() noexcept
         {
             vkDestroyPipelineLayout(this->device_.get(), this->pipelineLayout_, nullptr);
-            MGO_LOG("Destroyed mgo::vk::PipelineLayout");
+            MGO_LOG("Destroyed mgo::vk::PipelineLayout!");
         }
             
         VkPipelineLayout PipelineLayout::get() const noexcept
@@ -782,7 +771,6 @@ namespace mgo
             
             if (!fileStream.is_open())
                 throw std::runtime_error("Failed to open shader: " + path);
-            MGO_LOG("Opened shader: " << path);
             
             std::size_t fileSize = static_cast<std::size_t>(fileStream.tellg());
             std::vector<char> code(fileSize);
@@ -821,11 +809,11 @@ namespace mgo
         renderPass_(renderPass),
         pipelineLayout_(pipelineLayout)
         {
-            ShaderModule vertShaderModule("MangosEngine/Vulkan/Shaders/SPIR-V/vert.spv", this->device_);
+            ShaderModule vertShaderModule("MangosEngine/Vulkan/SPIR-V/vert.spv", this->device_);
             VkPipelineShaderStageCreateInfo vertPipelineShaderStageCreateInfo =
             this->getVkPipelineShaderStageCreateInfo(vertShaderModule, VK_SHADER_STAGE_VERTEX_BIT);
             
-            ShaderModule fragShaderModule("MangosEngine/Vulkan/Shaders/SPIR-V/frag.spv", this->device_);
+            ShaderModule fragShaderModule("MangosEngine/Vulkan/SPIR-V/frag.spv", this->device_);
             VkPipelineShaderStageCreateInfo fragPipelineShaderStageCreateInfo =
             this->getVkPipelineShaderStageCreateInfo(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT);
         
@@ -873,13 +861,13 @@ namespace mgo
 
             if (vkCreateGraphicsPipelines(this->device_.get(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &this->pipeline_) != VK_SUCCESS)
                 throw std::runtime_error("failed to create mgo::vk::Pipeline!");
-            MGO_LOG("Created mgo::vk::Pipeline");
+            MGO_LOG("Created mgo::vk::Pipeline!");
         }
         
         Pipeline::~Pipeline() noexcept
         {
             vkDestroyPipeline(this->device_.get(), this->pipeline_, nullptr);
-            MGO_LOG("Destroyed mgo::vk::Pipeline");
+            MGO_LOG("Destroyed mgo::vk::Pipeline!");
         }
         
         VkPipeline Pipeline::get() const noexcept

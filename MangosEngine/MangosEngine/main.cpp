@@ -1,15 +1,15 @@
-#include "app.hpp"
+#include "application.hpp"
 
 int main()
 {
     try
     {
-        mgo::App app;
-        app.run();
+        mgo::Application application;
+        application.run();
     }
     catch (const std::exception& errorMessage)
     {
-        std::cerr << errorMessage.what() << std::endl;
+        MGO_LOG(errorMessage.what());
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;

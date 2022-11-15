@@ -5,6 +5,14 @@
 #include <string>
 #include <vector>
 #include <exception>
+#pragma mark - MGO_LOG(message)
+#ifndef MGO_LOG
+#ifdef DEBUG
+#define MGO_LOG(message) std::cerr << message << std::endl
+#else
+#define MGO_LOG(message)
+#endif
+#endif
 namespace mgo
 {
     namespace glfw

@@ -9,12 +9,13 @@ namespace mgo
     namespace vk
     {
         class Instance;
-        class PhysicalDevice;
         class DebugUtilsMessenger;
         class Surface;
         class PhysicalDevice;
         class Device;
         class Swapchain;
+        class PipelineLayout;
+        class Pipeline;
 
 #pragma mark - mgo::vk::Instance
         class Instance final
@@ -125,11 +126,11 @@ namespace mgo
             const Instance& instance_;
             const Surface& surface_;
 
+        public:
             PhysicalDevice(const Instance& instance, const Surface& surface);
             
             ~PhysicalDevice() noexcept;
             
-        public:
             VkPhysicalDevice get() const noexcept;
             
             std::vector<const char*> getExtensions() const noexcept;

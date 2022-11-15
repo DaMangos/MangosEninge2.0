@@ -1,13 +1,4 @@
 #include "glfw.hpp"
-
-#pragma mark - LOG(message)
-#ifndef LOG
-#ifdef DEBUG
-#define MGO_LOG(message) std::cerr << message << std::endl
-#else
-#define MGO_LOG(message)
-#endif
-#endif
 namespace mgo
 {
     namespace glfw
@@ -24,9 +15,7 @@ namespace mgo
             
             if (!glfwInit())
                 throw std::runtime_error("Failed to initialise GLFW!");
-            
-            MGO_LOG("Successfully initialise GLFW!");
-            
+                        
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
             
@@ -34,7 +23,6 @@ namespace mgo
             
             if (!this->pWindow_)
                 throw std::runtime_error("Failed to create mgo::glfw::Window!");
-            
             MGO_LOG("Created mgo::glfw::Window!");
         }
         
@@ -42,6 +30,7 @@ namespace mgo
         {
             glfwDestroyWindow(this->pWindow_);
             glfwTerminate();
+            MGO_LOG("Destroyed mgo::glfw::Window!");
         }
         
         GLFWwindow* Window::Get() const noexcept
