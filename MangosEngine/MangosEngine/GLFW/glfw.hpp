@@ -21,10 +21,10 @@ namespace mgo
         class Window final
         {
         private:
-            const std::string       windowName_;
-            const std::uint32_t     windowHight_;
-            const std::uint32_t     windowWidth_;
-            GLFWwindow*             pWindow_;
+            const std::string windowName_;
+            const std::uint32_t windowHight_;
+            const std::uint32_t windowWidth_;
+            GLFWwindow* pWindow_;
             
         public:
             Window(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHight);
