@@ -9,17 +9,23 @@ namespace mgo
     private:
         glfw::Window window_;
         vk::Instance instance_;
-#ifdef DEBUG
+#if MGO_DEBUG
         vk::DebugUtilsMessenger debugUtilsMessenger_;
 #endif
         vk::Surface surface_;
         vk::PhysicalDevice physicalDevice_;
         vk::Device device_;
+        vk::Semaphore imageAvailableSemaphore_;
+        vk::Semaphore renderFinishedSemaphore_;
+        vk::Fence inFlightFence_;
         vk::Swapchain swapchain_;
         vk::ImageViews imageViews_;
         vk::RenderPass renderPass_;
+        vk::Framebuffers framebuffers_;
         vk::PipelineLayout pipelineLayout_;
         vk::Pipeline pipeline_;
+        vk::CommandPool commandPool_;
+        vk::CommandBuffer commandBuffer_;
         
     public:
         Application();
@@ -27,5 +33,8 @@ namespace mgo
         ~Application();
                 
         void run();
+        
+    private:
+        void drawFrame();
     };
 }

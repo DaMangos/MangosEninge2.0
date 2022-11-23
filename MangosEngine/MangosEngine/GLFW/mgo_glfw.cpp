@@ -4,10 +4,10 @@ namespace mgo
     namespace glfw
     {
 #pragma mark - mgo::glfw::Window
-        Window::Window(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHight)
+        Window::Window(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHeight)
         :
         windowName_(windowName),
-        windowHight_(windowHight),
+        windowHeight_(windowHeight),
         windowWidth_(windowWidth),
         pWindow_(nullptr)
         {
@@ -19,7 +19,7 @@ namespace mgo
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
             
-            this->pWindow_ = glfwCreateWindow(this->windowWidth_, this->windowHight_, this->windowName_.c_str(), nullptr, nullptr);
+            this->pWindow_ = glfwCreateWindow(this->windowWidth_, this->windowHeight_, this->windowName_.c_str(), nullptr, nullptr);
             
             if (!this->pWindow_)
                 throw std::runtime_error("Failed to create mgo::glfw::Window!");
@@ -33,7 +33,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::glfw::Window!");
         }
         
-        GLFWwindow* Window::Get() const noexcept
+        const GLFWwindow* Window::Get() const noexcept
         {
             return this->pWindow_;
         }

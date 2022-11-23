@@ -55,7 +55,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Instance!");
         }
         
-        VkInstance Instance::get() const noexcept
+        const VkInstance& Instance::get() const noexcept
         {
             return this->instance_;
         }
@@ -145,7 +145,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::DebugUtilsMessenger!");
         }
         
-        VkDebugUtilsMessengerEXT DebugUtilsMessenger::get() const noexcept
+        const VkDebugUtilsMessengerEXT& DebugUtilsMessenger::get() const noexcept
         {
             return this->debugUtilsMessengerEXT_;
         }
@@ -212,7 +212,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destoryed mgo::vk::Surface!");
         }
         
-        VkSurfaceKHR Surface::get() const noexcept
+        const VkSurfaceKHR& Surface::get() const noexcept
         {
             return this->surface_;
         }
@@ -233,7 +233,8 @@ namespace mgo
             vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice.get(), this->surface_, &formatCount, surfaceFormats.data());
             
             for (const auto& availableSurfaceFormat : surfaceFormats)
-                if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                if (availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+                    availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
                     return availableSurfaceFormat;
             return surfaceFormats[0];
         }
@@ -301,7 +302,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::PhysicalDevice!");
         }
         
-        VkPhysicalDevice PhysicalDevice::get() const noexcept
+        const VkPhysicalDevice& PhysicalDevice::get() const noexcept
         {
             return this->physicalDevice_;
         }
@@ -526,9 +527,19 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Device!");
         }
         
-        VkDevice Device::get() const noexcept
+        const VkDevice& Device::get() const noexcept
         {
             return this->device_;
+        }
+        
+        const VkQueue& Device::getGraphicsQueue() const noexcept
+        {
+            return this->graphicsQueue_;
+        }
+        
+        const VkQueue& Device::getPresentQueue() const noexcept
+        {
+            return this->presentQueue_;
         }
         
         VkDeviceQueueCreateInfo Device::getDeviceQueueCreateInfo(std::uint32_t queueFamily, const float* pQueuePriority) const noexcept
@@ -543,25 +554,81 @@ namespace mgo
             return deviceQueueCreateInfo;
         }
         
+#pragma mark - mgo::vk::Semaphore
+        Semaphore::Semaphore(const Device& device, VkSemaphoreCreateFlags flags)
+        :
+        device_(device)
+        {
+            VkSemaphoreCreateInfo semaphoreCreateInfo{};
+            semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            semaphoreCreateInfo.pNext = nullptr;
+            semaphoreCreateInfo.flags = flags;
+            
+            if (vkCreateSemaphore(this->device_.get(), &semaphoreCreateInfo, nullptr, &this->semaphore_) != VK_SUCCESS)
+                throw std::runtime_error("Failed to create mgo::vk::Semaphore!");
+            MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Semaphore!");
+        }
+        
+        Semaphore::~Semaphore() noexcept
+        {
+            vkDestroySemaphore(this->device_.get(), this->semaphore_, nullptr);
+            MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Semaphore!");
+        }
+        
+        const VkSemaphore& Semaphore::get() const noexcept
+        {
+            return this->semaphore_;
+        }
+        
+#pragma mark - mgo::vk::Fences
+        Fence::Fence(const Device& device, VkFenceCreateFlags flags)
+        :
+        device_(device)
+        {
+            VkFenceCreateInfo fenceCreateInfo{};
+            fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            fenceCreateInfo.pNext = nullptr;
+            fenceCreateInfo.flags = flags;
+            
+            if (vkCreateFence(this->device_.get(), &fenceCreateInfo, nullptr, &this->fence_) != VK_SUCCESS)
+                throw std::runtime_error("Failed to create mgo::vk::Fence!");
+            MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Fence!");
+        }
+        
+        Fence::~Fence() noexcept
+        {
+            vkDestroyFence(this->device_.get(), this->fence_, nullptr);
+            MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Fence!");
+        }
+        
+        const VkFence& Fence::get() const noexcept
+        {
+            return this->fence_;
+        }
+        
+        void Fence::wait() const noexcept
+        {
+            vkWaitForFences(this->device_.get(), 1, &this->fence_, VK_TRUE, UINT64_MAX);
+            vkResetFences(this->device_.get(),  1, &this->fence_);
+        }
+        
 #pragma mark - mgo::vk::Swapchain
         Swapchain::Swapchain(const Surface& surface, const PhysicalDevice& physicalDevice, const Device& device)
         :
-        surface_(surface),
+        surfaceCapabilities_(surface.getVkSurfaceCapabilitiesKHR(physicalDevice)),
+        surfaceFormat_(surface.getVkSurfaceFormatKHR(physicalDevice)),
+        presentMode_(surface.getVkPresentModeKHR(physicalDevice)),
+        extent_(surface.getVkExtent2D(physicalDevice)),
         physicalDevice_(physicalDevice),
         device_(device)
         {
-            VkSurfaceCapabilitiesKHR surfaceCapabilities    = this->surface_.getVkSurfaceCapabilitiesKHR(this->physicalDevice_);
-            VkSurfaceFormatKHR surfaceFormat                = this->surface_.getVkSurfaceFormatKHR(this->physicalDevice_);
-            VkPresentModeKHR presentMode                    = this->surface_.getVkPresentModeKHR(this->physicalDevice_);
-            VkExtent2D extent                               = this->surface_.getVkExtent2D(this->physicalDevice_);
-            
             std::set<std::uint32_t> UniqueQueueFamilyIndices = this->physicalDevice_.getUniqueQueueFamilyIndices().families_;
             std::vector<std::uint32_t> queueFamilyIndices(UniqueQueueFamilyIndices.begin(), UniqueQueueFamilyIndices.end());
-                
+            
             std::uint32_t minImageCount =
-            surfaceCapabilities.maxImageCount > 0 &&
-            surfaceCapabilities.minImageCount + 1 > surfaceCapabilities.maxImageCount ?
-            surfaceCapabilities.maxImageCount : surfaceCapabilities.minImageCount + 1;
+            this->surfaceCapabilities_.maxImageCount > 0 &&
+            this->surfaceCapabilities_.minImageCount + 1 > this->surfaceCapabilities_.maxImageCount ?
+            this->surfaceCapabilities_.maxImageCount : this->surfaceCapabilities_.minImageCount + 1;
             
             VkSwapchainCreateInfoKHR swapchainCreateInfo{};
             swapchainCreateInfo.sType                    = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -569,17 +636,17 @@ namespace mgo
             swapchainCreateInfo.flags                    = 0;
             swapchainCreateInfo.surface                  = surface.get();
             swapchainCreateInfo.minImageCount            = minImageCount;
-            swapchainCreateInfo.imageFormat              = surfaceFormat.format;
-            swapchainCreateInfo.imageColorSpace          = surfaceFormat.colorSpace;
-            swapchainCreateInfo.imageExtent              = extent;
+            swapchainCreateInfo.imageFormat              = this->surfaceFormat_.format;
+            swapchainCreateInfo.imageColorSpace          = this->surfaceFormat_.colorSpace;
+            swapchainCreateInfo.imageExtent              = this->extent_;
             swapchainCreateInfo.imageArrayLayers         = 1;
             swapchainCreateInfo.imageUsage               = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             swapchainCreateInfo.imageSharingMode         = VK_SHARING_MODE_EXCLUSIVE;
             swapchainCreateInfo.queueFamilyIndexCount    = queueFamilyIndices.size() > 1 ? static_cast<std::uint32_t>(queueFamilyIndices.size()) : 0;
             swapchainCreateInfo.pQueueFamilyIndices      = queueFamilyIndices.size() > 1 ? queueFamilyIndices.data() : nullptr;
-            swapchainCreateInfo.preTransform             = surfaceCapabilities.currentTransform;
+            swapchainCreateInfo.preTransform             = this->surfaceCapabilities_.currentTransform;
             swapchainCreateInfo.compositeAlpha           = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-            swapchainCreateInfo.presentMode              = presentMode;
+            swapchainCreateInfo.presentMode              = this->presentMode_;
             swapchainCreateInfo.clipped                  = VK_TRUE;
             swapchainCreateInfo.oldSwapchain             = VK_NULL_HANDLE;
             
@@ -594,16 +661,42 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Swapchain!");
         }
         
-        VkSwapchainKHR Swapchain::get() const noexcept
+        const VkSwapchainKHR& Swapchain::get() const noexcept
         {
             return this->swapchain_;
         }
         
+        VkSurfaceCapabilitiesKHR Swapchain::getVkSurfaceCapabilitiesKHR() const noexcept
+        {
+            return this->surfaceCapabilities_;
+        }
+        
+        VkSurfaceFormatKHR Swapchain::getVkSurfaceFormatKHR() const noexcept
+        {
+            return this->surfaceFormat_;
+        }
+        
+        VkPresentModeKHR Swapchain::getVkPresentModeKHR() const noexcept
+        {
+            return this->presentMode_;
+        }
+        
+        VkExtent2D Swapchain::getVkExtent2D() const noexcept
+        {
+            return this->extent_;
+        }
+        
+        std::uint32_t Swapchain::getNextImageIndex(const Semaphore& semaphore) const noexcept
+        {
+            std::uint32_t ImageIndex;
+            vkAcquireNextImageKHR(this->device_.get(), this->swapchain_, UINT64_MAX, semaphore.get(), VK_NULL_HANDLE, &ImageIndex);
+            return ImageIndex;
+        }
+        
+        
 #pragma mark - mgo::vk::ImageViews
-        ImageViews::ImageViews(const Surface& surface, const PhysicalDevice& physicalDevice, const Device& device, const Swapchain& swapchain)
+        ImageViews::ImageViews(const Device& device, const Swapchain& swapchain)
         :
-        surface_(surface),
-        physicalDevice_(physicalDevice),
         device_(device),
         swapchain_(swapchain)
         {
@@ -613,7 +706,7 @@ namespace mgo
             this->imageViews_.resize(static_cast<std::size_t>(imageCount));
             this->images_.resize(static_cast<std::size_t>(imageCount));
             vkGetSwapchainImagesKHR(this->device_.get(), this->swapchain_.get(), &imageCount, this->images_.data());
-        
+            
             for (std::size_t i = 0; i < static_cast<std::size_t>(imageCount); i++)
             {
                 VkImageViewCreateInfo imageViewCreateInfo = this->getVkImageViewCreateInfo(this->images_[i]);
@@ -629,9 +722,14 @@ namespace mgo
                 vkDestroyImageView(this->device_.get(), imageView, nullptr);
         }
         
-        std::vector<VkImageView> ImageViews::get() const noexcept
+        const std::vector<VkImageView>& ImageViews::get() const noexcept
         {
             return this->imageViews_;
+        }
+        
+        std::size_t ImageViews::size() const noexcept
+        {
+            return this->imageViews_.size();
         }
         
         VkImageViewCreateInfo ImageViews::getVkImageViewCreateInfo(VkImage image) const noexcept
@@ -642,7 +740,7 @@ namespace mgo
             imageViewCreateInfo.flags                            = 0;
             imageViewCreateInfo.image                            = image;
             imageViewCreateInfo.viewType                         = VK_IMAGE_VIEW_TYPE_2D;
-            imageViewCreateInfo.format                           = this->surface_.getVkSurfaceFormatKHR(this->physicalDevice_).format;
+            imageViewCreateInfo.format                           = this->swapchain_.getVkSurfaceFormatKHR().format;
             imageViewCreateInfo.components.r                     = VK_COMPONENT_SWIZZLE_IDENTITY;
             imageViewCreateInfo.components.g                     = VK_COMPONENT_SWIZZLE_IDENTITY;
             imageViewCreateInfo.components.b                     = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -654,18 +752,17 @@ namespace mgo
             imageViewCreateInfo.subresourceRange.layerCount      = 1;
             return imageViewCreateInfo;
         }
-
+        
 #pragma mark - mgo::vk::RenderPass
-        RenderPass::RenderPass(const Surface& surface, const PhysicalDevice& physicalDevice, const Device& device)
+        RenderPass::RenderPass(const Device& device, const Swapchain& swapchain)
         :
-        surface_(surface),
-        physicalDevice_(physicalDevice),
-        device_(device)
+        device_(device),
+        swapchain_(swapchain)
         {
             std::vector<VkAttachmentDescription> attachmentDescriptions = {this->getVkAttachmentDescription()};
             VkAttachmentReference attachmentReference = this->getVkAttachmentReference();
             std::vector<VkSubpassDescription> subpassDescriptions = {this->getVkSubpassDescription(&attachmentReference)};
-
+            
             VkRenderPassCreateInfo renderPassCreateInfo{};
             renderPassCreateInfo.sType              = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
             renderPassCreateInfo.pNext              = nullptr;
@@ -688,7 +785,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::RenderPass!");
         }
         
-        VkRenderPass RenderPass::get() const noexcept
+        const VkRenderPass& RenderPass::get() const noexcept
         {
             return this->renderPass_;
         }
@@ -697,7 +794,7 @@ namespace mgo
         {
             VkAttachmentDescription attachmentDescription{};
             attachmentDescription.flags           = 0;
-            attachmentDescription.format          = this->surface_.getVkSurfaceFormatKHR(this->physicalDevice_).format;
+            attachmentDescription.format          = this->swapchain_.getVkSurfaceFormatKHR().format;
             attachmentDescription.samples         = VK_SAMPLE_COUNT_1_BIT;
             attachmentDescription.loadOp          = VK_ATTACHMENT_LOAD_OP_CLEAR;
             attachmentDescription.storeOp         = VK_ATTACHMENT_STORE_OP_STORE;
@@ -732,6 +829,52 @@ namespace mgo
             return subpassDescription;
         }
         
+#pragma mark - mgo::vk::Framebuffers
+        Framebuffers::Framebuffers(const Device& device, const Swapchain& swapchain, const ImageViews& imageViews, const RenderPass& renderPass)
+        :
+        device_(device),
+        swapchain_(swapchain),
+        imageViews_(imageViews),
+        renderPass_(renderPass)
+        {
+            this->framebuffers_.resize(this->imageViews_.size());
+            
+            for (std::size_t i = 0; i < this->imageViews_.size(); i++)
+            {
+                VkFramebufferCreateInfo framebufferCreateInfo{};
+                framebufferCreateInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+                framebufferCreateInfo.pNext           = nullptr;
+                framebufferCreateInfo.flags           = 0;
+                framebufferCreateInfo.renderPass      = this->renderPass_.get();
+                framebufferCreateInfo.attachmentCount = 1;
+                framebufferCreateInfo.pAttachments    = &this->imageViews_.get()[i];
+                framebufferCreateInfo.width           = this->swapchain_.getVkExtent2D().width;
+                framebufferCreateInfo.height          = this->swapchain_.getVkExtent2D().height;
+                framebufferCreateInfo.layers          = 1;
+                
+                if (vkCreateFramebuffer(this->device_.get(), &framebufferCreateInfo, nullptr, &this->framebuffers_[i]) != VK_SUCCESS)
+                    throw std::runtime_error("Failed to create mgo::vk::Framebuffers!");
+            }
+            MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Framebuffers!");
+        }
+        
+        Framebuffers::~Framebuffers() noexcept
+        {
+            for (std::size_t i = 0; i < this->imageViews_.size(); i++)
+                vkDestroyFramebuffer(this->device_.get(), this->framebuffers_[i], nullptr);
+            MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Framebuffers!");
+        }
+        
+        const std::vector<VkFramebuffer>& Framebuffers::get() const noexcept
+        {
+            return this->framebuffers_;
+        }
+        
+        std::size_t Framebuffers::size() const noexcept
+        {
+            return this->framebuffers_.size();
+        }
+        
 #pragma mark - mgo::vk::PipelineLayout
         PipelineLayout::PipelineLayout(const Device& device)
         :
@@ -750,14 +893,14 @@ namespace mgo
                 throw std::runtime_error("Failed to create mgo::vk::PipelineLayout!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::PipelineLayout!");
         }
-            
+        
         PipelineLayout::~PipelineLayout() noexcept
         {
             vkDestroyPipelineLayout(this->device_.get(), this->pipelineLayout_, nullptr);
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::PipelineLayout!");
         }
-            
-        VkPipelineLayout PipelineLayout::get() const noexcept
+        
+        const VkPipelineLayout& PipelineLayout::get() const noexcept
         {
             return pipelineLayout_;
         }
@@ -790,18 +933,18 @@ namespace mgo
                 throw std::runtime_error("failed to create mgo::vk::Pipeline::ShaderModule!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Pipeline::ShaderModule!");
         }
-                
+        
         Pipeline::ShaderModule::~ShaderModule() noexcept
         {
             vkDestroyShaderModule(this->device_.get(), this->shaderModule_, nullptr);
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Pipeline::ShaderModule!");
         }
-               
-        VkShaderModule Pipeline::ShaderModule::get() const noexcept
+        
+        const VkShaderModule& Pipeline::ShaderModule::get() const noexcept
         {
             return this->shaderModule_;
         }
-                
+        
 #pragma mark - mgo::vk::Pipeline
         Pipeline::Pipeline(const Device& device, const RenderPass& renderPass, const PipelineLayout& pipelineLayout)
         :
@@ -816,7 +959,7 @@ namespace mgo
             ShaderModule fragShaderModule("MangosEngine/Vulkan/SPIR-V/frag.spv", this->device_);
             VkPipelineShaderStageCreateInfo fragPipelineShaderStageCreateInfo =
             this->getVkPipelineShaderStageCreateInfo(fragShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT);
-        
+            
             std::vector<VkPipelineShaderStageCreateInfo> stages = {vertPipelineShaderStageCreateInfo, fragPipelineShaderStageCreateInfo};
             
             VkPipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo =
@@ -833,16 +976,16 @@ namespace mgo
             
             VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo =
             this->getVkPipelineMultisampleStateCreateInfo();
-
+            
             std::vector<VkPipelineColorBlendAttachmentState> attachments = {this->getVkPipelineColorBlendAttachmentState()};
             VkPipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo =
             this->getVkPipelineColorBlendStateCreateInfo(attachments);
-
+            
             std::vector<VkDynamicState> dynamicStates ={VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
             VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo =
             this->getVkPipelineDynamicStateCreateInfo(dynamicStates);
-
-
+            
+            
             VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo{};
             graphicsPipelineCreateInfo.sType                = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
             graphicsPipelineCreateInfo.stageCount           = static_cast<std::uint32_t>(stages.size());
@@ -858,7 +1001,7 @@ namespace mgo
             graphicsPipelineCreateInfo.renderPass           = this->renderPass_.get();
             graphicsPipelineCreateInfo.subpass              = 0;
             graphicsPipelineCreateInfo.basePipelineHandle   = VK_NULL_HANDLE;
-
+            
             if (vkCreateGraphicsPipelines(this->device_.get(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &this->pipeline_) != VK_SUCCESS)
                 throw std::runtime_error("failed to create mgo::vk::Pipeline!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Pipeline!");
@@ -870,7 +1013,7 @@ namespace mgo
             MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::Pipeline!");
         }
         
-        VkPipeline Pipeline::get() const noexcept
+        const VkPipeline& Pipeline::get() const noexcept
         {
             return this->pipeline_;
         }
@@ -976,7 +1119,7 @@ namespace mgo
             pipelineColorBlendAttachmentState.colorWriteMask        |= VK_COLOR_COMPONENT_A_BIT;
             return pipelineColorBlendAttachmentState;
         }
-
+        
         VkPipelineColorBlendStateCreateInfo
         Pipeline::getVkPipelineColorBlendStateCreateInfo(const std::vector<VkPipelineColorBlendAttachmentState>& attachments) const noexcept
         {
@@ -994,7 +1137,7 @@ namespace mgo
             pipelineColorBlendStateCreateInfo.blendConstants[3] = 0.0f;
             return pipelineColorBlendStateCreateInfo;
         }
-
+        
         VkPipelineDynamicStateCreateInfo Pipeline::getVkPipelineDynamicStateCreateInfo(const std::vector<VkDynamicState>& dynamicStates) const noexcept
         {
             VkPipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo{};
@@ -1004,6 +1147,170 @@ namespace mgo
             pipelineDynamicStateCreateInfo.dynamicStateCount  = static_cast<std::uint32_t>(dynamicStates.size());
             pipelineDynamicStateCreateInfo.pDynamicStates     = dynamicStates.data();
             return pipelineDynamicStateCreateInfo;
+        }
+        
+#pragma mark - mgo::vk::CommandPool
+        CommandPool::CommandPool(const PhysicalDevice& physicalDevice, const Device& device)
+        :
+        physicalDevice_(physicalDevice),
+        device_(device)
+        {
+            VkCommandPoolCreateInfo commandPoolCreateInfo{};
+            commandPoolCreateInfo.sType               = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            commandPoolCreateInfo.pNext               = nullptr;
+            commandPoolCreateInfo.flags               = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            commandPoolCreateInfo.queueFamilyIndex    = this->physicalDevice_.getQueueFamilyIndices().graphicsFamily_.value();
+            
+            if (vkCreateCommandPool(this->device_.get(), &commandPoolCreateInfo, nullptr, &this->commandPool_) != VK_SUCCESS)
+                throw std::runtime_error("Failed to create mgo::vk::CommandPool!");
+            MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::CommandPool!");
+        }
+        
+        CommandPool::~CommandPool() noexcept
+        {
+            vkDestroyCommandPool(this->device_.get(), this->commandPool_, nullptr);
+            MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::CommandPool!");
+        }
+        
+        const VkCommandPool& CommandPool::get() const noexcept
+        {
+            return this->commandPool_;
+        }
+        
+#pragma mark - mgo::vk::CommandBuffer
+        CommandBuffer::CommandBuffer(const Device& device,
+                                     const Swapchain& swapchain,
+                                     const RenderPass& renderPass,
+                                     const Framebuffers& framebuffers,
+                                     const Pipeline& pipeline,
+                                     const CommandPool& commandPool)
+        :
+        device_(device),
+        swapchain_(swapchain),
+        renderPass_(renderPass),
+        framebuffers_(framebuffers),
+        commandPool_(commandPool),
+        pipeline_(pipeline)
+        {
+            VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
+            commandBufferAllocateInfo.sType               = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            commandBufferAllocateInfo.pNext               = nullptr;
+            commandBufferAllocateInfo.commandPool         = this->commandPool_.get();
+            commandBufferAllocateInfo.level               = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            commandBufferAllocateInfo.commandBufferCount  = 1;
+            
+            if (vkAllocateCommandBuffers(this->device_.get(), &commandBufferAllocateInfo, &this->commandBuffer_) != VK_SUCCESS)
+                throw std::runtime_error("failed to create mgo::vk::CommandBuffer!");
+            MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::CommandBuffer!");
+        }
+        
+        CommandBuffer::~CommandBuffer() noexcept
+        {
+            MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::vk::CommandBuffer!");
+        }
+        
+        const VkCommandBuffer& CommandBuffer::get() const noexcept
+        {
+            return this->commandBuffer_;
+        }
+        
+        void CommandBuffer::record(std::uint32_t imageIndex) const
+        {
+            VkCommandBufferBeginInfo commandBufferBeginInfo = this->getVkCommandBufferBeginInfo();
+            
+            if (vkBeginCommandBuffer(this->commandBuffer_, &commandBufferBeginInfo) != VK_SUCCESS)
+                throw std::runtime_error("failed to begin recording mgo::vk::CommandBuffer!");
+            
+            VkClearValue black = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+            std::vector<VkClearValue> clearValues;
+            clearValues.emplace_back(black);
+            
+            VkRenderPassBeginInfo renderPassBeginInfo = this->getVkRenderPassBeginInfo(imageIndex, clearValues);
+            VkViewport viewport = this->getVkViewport();
+            VkRect2D rect = this->getVkRect2D();
+            
+            vkCmdBeginRenderPass(this->commandBuffer_, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            vkCmdBindPipeline(this->commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline_.get());
+            vkCmdSetViewport(this->commandBuffer_, 0, 1, &viewport);
+            vkCmdSetScissor(this->commandBuffer_, 0, 1, &rect);
+            vkCmdDraw(this->commandBuffer_, 3, 1, 0, 0);
+            vkCmdEndRenderPass(this->commandBuffer_);
+            
+            if (vkEndCommandBuffer(this->commandBuffer_) != VK_SUCCESS)
+                throw std::runtime_error("Failed to record mgo::vk::CommandBuffer!");
+        }
+        
+        void CommandBuffer::reset() const noexcept
+        {
+            vkResetCommandBuffer(this->commandBuffer_, 0);
+        }
+        
+        void CommandBuffer::submit(const Semaphore& waitSemaphore, const Semaphore& signalSemaphore, const Fence& fence) const
+        {
+            std::array<VkSemaphore, 1> waitSemaphores = {waitSemaphore.get()};
+            std::array<VkSemaphore, 1> signalSemaphores = {signalSemaphore.get()};
+            std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+            
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.pNext                = nullptr;
+            submitInfo.waitSemaphoreCount   = 1;
+            submitInfo.pWaitSemaphores      = waitSemaphores.data();
+            submitInfo.pWaitDstStageMask    = waitStages.data();
+            submitInfo.commandBufferCount   = 1;
+            submitInfo.pCommandBuffers      = &this->commandBuffer_;
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores    = signalSemaphores.data();
+            std::array<VkSubmitInfo, 1> submitInfos = {submitInfo};
+            
+            if (vkQueueSubmit(this->device_.getGraphicsQueue(), 1, submitInfos.data(), fence.get()) != VK_SUCCESS)
+                throw std::runtime_error("Failed to submit mgo::vk::CommandBuffer!");
+        }
+        
+        VkCommandBufferBeginInfo CommandBuffer::getVkCommandBufferBeginInfo() const noexcept
+        {
+            VkCommandBufferBeginInfo commandBufferBeginInfo{};
+            commandBufferBeginInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            commandBufferBeginInfo.pNext            = nullptr;
+            commandBufferBeginInfo.flags            = 0;
+            commandBufferBeginInfo.pInheritanceInfo = nullptr;
+            return commandBufferBeginInfo;
+        }
+        
+        VkRenderPassBeginInfo CommandBuffer::getVkRenderPassBeginInfo(std::uint32_t imageIndex, const std::vector<VkClearValue>& clearValues) const noexcept
+        {
+            VkRenderPassBeginInfo renderPassBeginInfo{};
+            renderPassBeginInfo.sType                   = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassBeginInfo.pNext                   = nullptr;
+            renderPassBeginInfo.renderPass              = this->renderPass_.get();
+            renderPassBeginInfo.framebuffer             = this->framebuffers_.get().at(static_cast<std::uint32_t>(imageIndex));
+            renderPassBeginInfo.renderArea.offset.x     = 0;
+            renderPassBeginInfo.renderArea.offset.y     = 0;
+            renderPassBeginInfo.renderArea.extent       = this->swapchain_.getVkExtent2D();
+            renderPassBeginInfo.clearValueCount         = static_cast<std::uint32_t>(clearValues.size());
+            renderPassBeginInfo.pClearValues            = clearValues.data();
+            return renderPassBeginInfo;
+        }
+        
+        VkViewport CommandBuffer::getVkViewport() const noexcept
+        {
+            VkViewport viewport{};
+            viewport.x          = 0.0f;
+            viewport.y          = 0.0f;
+            viewport.width      = static_cast<float>(this->swapchain_.getVkExtent2D().width);
+            viewport.height     = static_cast<float>(this->swapchain_.getVkExtent2D().height);
+            viewport.minDepth   = 0.0f;
+            viewport.maxDepth   = 1.0f;
+            return viewport;
+        }
+        
+        VkRect2D CommandBuffer::getVkRect2D() const noexcept
+        {
+            VkRect2D Rect{};
+            Rect.offset.x   = 0;
+            Rect.offset.y   = 0;
+            Rect.extent     = this->swapchain_.getVkExtent2D();
+            return Rect;
         }
     }
 }

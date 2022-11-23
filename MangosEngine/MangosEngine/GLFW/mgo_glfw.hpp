@@ -14,16 +14,16 @@ namespace mgo
         {
         private:
             const std::string windowName_;
-            const std::uint32_t windowHight_;
+            const std::uint32_t windowHeight_;
             const std::uint32_t windowWidth_;
             GLFWwindow* pWindow_;
             
         public:
-            Window(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHight);
+            Window(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHeight);
             
             ~Window() noexcept;
             
-            GLFWwindow* Get() const noexcept;
+            const GLFWwindow* Get() const noexcept;
             
             std::vector<const char*> getExtensions() const noexcept;
             

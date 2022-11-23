@@ -4,6 +4,8 @@
 #include <map>
 #include <set>
 #include <fstream>
+#include <array>
+
 namespace mgo
 {
     namespace vk
@@ -22,7 +24,7 @@ namespace mgo
             
             ~Instance() noexcept;
             
-            VkInstance get() const noexcept;
+            const VkInstance& get() const noexcept;
             
         private:
             void checkInstanceExtensionSupport() const noexcept;
@@ -46,7 +48,7 @@ namespace mgo
             
             ~DebugUtilsMessenger() noexcept;
             
-            VkDebugUtilsMessengerEXT get() const noexcept;
+            const VkDebugUtilsMessengerEXT& get() const noexcept;
             
             static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                                 VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -81,7 +83,7 @@ namespace mgo
             
             ~Surface() noexcept;
             
-            VkSurfaceKHR get() const noexcept;
+            const VkSurfaceKHR& get() const noexcept;
             
             VkSurfaceCapabilitiesKHR getVkSurfaceCapabilitiesKHR(const PhysicalDevice& physicalDevice) const noexcept;
             
@@ -117,22 +119,22 @@ namespace mgo
             const std::vector<const char*> extensions_;
             const Instance& instance_;
             const Surface& surface_;
-
+            
         public:
             PhysicalDevice(const Instance& instance, const Surface& surface);
             
             ~PhysicalDevice() noexcept;
             
-            VkPhysicalDevice get() const noexcept;
+            const VkPhysicalDevice& get() const noexcept;
             
             std::vector<const char*> getExtensions() const noexcept;
             
             QueueFamilyIndices getQueueFamilyIndices() const noexcept;
             
             UniqueQueueFamilyIndices getUniqueQueueFamilyIndices() const noexcept;
-
+            
             VkPhysicalDeviceFeatures getPhysicalDeviceFeatures() const noexcept;
-
+            
         private:
             std::uint8_t rankPhysicalDevices(VkPhysicalDevice physicalDevice) const noexcept;
             
@@ -159,10 +161,46 @@ namespace mgo
             
             ~Device() noexcept;
             
-            VkDevice get() const noexcept;
-                        
+            const VkDevice& get() const noexcept;
+            
+            const VkQueue& getGraphicsQueue() const noexcept;
+            
+            const VkQueue& getPresentQueue() const noexcept;
+            
         private:
             VkDeviceQueueCreateInfo getDeviceQueueCreateInfo(std::uint32_t queueFamily, const float* pQueuePriority) const noexcept;
+        };
+        
+#pragma mark - mgo::vk::Semaphore
+        class Semaphore final
+        {
+        private:
+            VkSemaphore semaphore_;
+            const Device& device_;
+            
+        public:
+            Semaphore(const Device& device, VkSemaphoreCreateFlags flags);
+            
+            ~Semaphore() noexcept;
+            
+            const VkSemaphore& get() const noexcept;
+        };
+        
+#pragma mark - mgo::vk::Fence
+        class Fence final
+        {
+        private:
+            VkFence fence_;
+            const Device& device_;
+            
+        public:
+            Fence(const Device& device, VkFenceCreateFlags flags);
+            
+            ~Fence() noexcept;
+            
+            const VkFence& get() const noexcept;
+            
+            void wait() const noexcept;
         };
         
 #pragma mark - mgo::vk::Swapchain
@@ -170,7 +208,10 @@ namespace mgo
         {
         private:
             VkSwapchainKHR swapchain_;
-            const Surface& surface_;
+            VkSurfaceCapabilitiesKHR surfaceCapabilities_;
+            VkSurfaceFormatKHR surfaceFormat_;
+            VkPresentModeKHR presentMode_;
+            VkExtent2D extent_;
             const PhysicalDevice& physicalDevice_;
             const Device& device_;
             
@@ -179,7 +220,17 @@ namespace mgo
             
             ~Swapchain() noexcept;
             
-            VkSwapchainKHR get() const noexcept;
+            const VkSwapchainKHR& get() const noexcept;
+            
+            VkSurfaceCapabilitiesKHR getVkSurfaceCapabilitiesKHR() const noexcept;
+            
+            VkSurfaceFormatKHR getVkSurfaceFormatKHR() const noexcept;
+            
+            VkPresentModeKHR getVkPresentModeKHR() const noexcept;
+            
+            VkExtent2D getVkExtent2D() const noexcept;
+            
+            std::uint32_t getNextImageIndex(const Semaphore& semaphore) const noexcept;
         };
         
 #pragma mark - mgo::vk::ImageViews
@@ -188,17 +239,17 @@ namespace mgo
         private:
             std::vector<VkImage> images_;
             std::vector<VkImageView> imageViews_;
-            const Surface& surface_;
-            const PhysicalDevice& physicalDevice_;
             const Device& device_;
             const Swapchain& swapchain_;
             
         public:
-            ImageViews(const Surface& surface, const PhysicalDevice& physicalDevice, const Device& device, const Swapchain& swapchain);
+            ImageViews(const Device& device, const Swapchain& swapchain);
             
             ~ImageViews() noexcept;
             
-            std::vector<VkImageView> get() const noexcept;
+            const std::vector<VkImageView>& get() const noexcept;
+            
+            std::size_t size() const noexcept;
             
         private:
             VkImageViewCreateInfo getVkImageViewCreateInfo(VkImage image) const noexcept;
@@ -209,16 +260,15 @@ namespace mgo
         {
         private:
             VkRenderPass renderPass_;
-            const Surface& surface_;
-            const PhysicalDevice& physicalDevice_;
             const Device& device_;
-
+            const Swapchain& swapchain_;
+            
         public:
-            RenderPass(const Surface& surface, const PhysicalDevice& physicalDevice, const Device& device);
+            RenderPass(const Device& device, const Swapchain& swapchain);
             
             ~RenderPass() noexcept;
             
-            VkRenderPass get() const noexcept;
+            const VkRenderPass& get() const noexcept;
             
         private:
             VkAttachmentDescription getVkAttachmentDescription() const noexcept;
@@ -227,19 +277,40 @@ namespace mgo
             
             VkSubpassDescription getVkSubpassDescription(const VkAttachmentReference* pColorAttachmentReference) const noexcept;
         };
+        
+#pragma mark - mgo::vk::Framebuffers
+        class Framebuffers final
+        {
+        private:
+            std::vector<VkFramebuffer> framebuffers_;
+            const Device& device_;
+            const Swapchain& swapchain_;
+            const ImageViews& imageViews_;
+            const RenderPass& renderPass_;
+            
+        public:
+            Framebuffers(const Device& device, const Swapchain& swapchain, const ImageViews& imageViews, const RenderPass& renderPass);
+            
+            ~Framebuffers() noexcept;
+            
+            const std::vector<VkFramebuffer>& get() const noexcept;
+            
+            std::size_t size() const noexcept;
+        };
+        
 #pragma mark - mgo::vk::PipelineLayout
         class PipelineLayout
         {
         private:
             VkPipelineLayout pipelineLayout_;
             const Device& device_;
-
+            
         public:
             PipelineLayout(const Device& device);
             
             ~PipelineLayout() noexcept;
             
-            VkPipelineLayout get() const noexcept;
+            const VkPipelineLayout& get() const noexcept;
         };
         
 #pragma mark - mgo::vk::Pipeline
@@ -258,7 +329,7 @@ namespace mgo
                 
                 ~ShaderModule() noexcept;
                 
-                VkShaderModule get() const noexcept;
+                const VkShaderModule& get() const noexcept;
             };
             
             VkPipeline pipeline_;
@@ -271,12 +342,12 @@ namespace mgo
             
             ~Pipeline() noexcept;
             
-            VkPipeline get() const noexcept;
+            const VkPipeline& get() const noexcept;
             
         private:
             VkPipelineShaderStageCreateInfo getVkPipelineShaderStageCreateInfo(const ShaderModule& shaderModule,
                                                                                VkShaderStageFlagBits stage) const noexcept;
-        
+            
             VkPipelineVertexInputStateCreateInfo getVkPipelineVertexInputStateCreateInfo() const noexcept;
             
             VkPipelineInputAssemblyStateCreateInfo getVkPipelineInputAssemblyStateCreateInfo() const noexcept;
@@ -288,12 +359,68 @@ namespace mgo
             VkPipelineMultisampleStateCreateInfo getVkPipelineMultisampleStateCreateInfo() const noexcept;
             
             VkPipelineColorBlendAttachmentState getVkPipelineColorBlendAttachmentState() const noexcept;
-
+            
             VkPipelineColorBlendStateCreateInfo
             getVkPipelineColorBlendStateCreateInfo(const std::vector<VkPipelineColorBlendAttachmentState>& attachments) const noexcept;
-
+            
             VkPipelineDynamicStateCreateInfo getVkPipelineDynamicStateCreateInfo(const std::vector<VkDynamicState>& dynamicStates) const noexcept;
         };
         
+#pragma mark - mgo::vk::CommandPool
+        class CommandPool final
+        {
+        private:
+            VkCommandPool commandPool_;
+            const PhysicalDevice& physicalDevice_;
+            const Device& device_;
+            
+        public:
+            
+            CommandPool(const PhysicalDevice& physicalDevice, const Device& device);
+            
+            ~CommandPool() noexcept;
+            
+            const VkCommandPool& get() const noexcept;
+        };
+        
+#pragma mark - mgo::vk::CommandBuffer
+        class CommandBuffer final
+        {
+        private:
+            VkCommandBuffer commandBuffer_;
+            const Device& device_;
+            const Swapchain& swapchain_;
+            const RenderPass& renderPass_;
+            const Framebuffers& framebuffers_;
+            const CommandPool& commandPool_;
+            const Pipeline& pipeline_;
+        public:
+            
+            CommandBuffer(const Device& device,
+                          const Swapchain& swapchain,
+                          const RenderPass& renderPass,
+                          const Framebuffers& framebuffers,
+                          const Pipeline& pipeline,
+                          const CommandPool& commandPool);
+            
+            ~CommandBuffer() noexcept;
+            
+            const VkCommandBuffer& get() const noexcept;
+            
+            void record(std::uint32_t imageIndex) const;
+            
+            void reset() const noexcept;
+            
+            void submit(const Semaphore& waitSemaphore, const Semaphore& signalSemaphore, const Fence& fence) const;
+            
+        private:
+            VkCommandBufferBeginInfo getVkCommandBufferBeginInfo() const noexcept;
+            
+            VkRenderPassBeginInfo getVkRenderPassBeginInfo(std::uint32_t imageIndex, const std::vector<VkClearValue>& clearValues) const noexcept;
+            
+            VkViewport getVkViewport() const noexcept;
+            
+            VkRect2D getVkRect2D() const noexcept;
+        };
     }
 }
