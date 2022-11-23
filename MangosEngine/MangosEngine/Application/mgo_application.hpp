@@ -15,9 +15,6 @@ namespace mgo
         vk::Surface surface_;
         vk::PhysicalDevice physicalDevice_;
         vk::Device device_;
-        vk::Semaphore imageAvailableSemaphore_;
-        vk::Semaphore renderFinishedSemaphore_;
-        vk::Fence inFlightFence_;
         vk::Swapchain swapchain_;
         vk::ImageViews imageViews_;
         vk::RenderPass renderPass_;

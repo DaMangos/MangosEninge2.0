@@ -554,6 +554,11 @@ namespace mgo
             return deviceQueueCreateInfo;
         }
         
+        void Device::wait() const noexcept
+        {
+            vkDeviceWaitIdle(this->device_);
+        }
+        
 #pragma mark - mgo::vk::Semaphore
         Semaphore::Semaphore(const Device& device, VkSemaphoreCreateFlags flags)
         :
@@ -1185,6 +1190,9 @@ namespace mgo
                                      const Pipeline& pipeline,
                                      const CommandPool& commandPool)
         :
+        imageAvailableSemaphore_(device, 0),
+        renderFinishedSemaphore_(device, 0),
+        inFlightFence_(device, VK_FENCE_CREATE_SIGNALED_BIT),
         device_(device),
         swapchain_(swapchain),
         renderPass_(renderPass),
@@ -1214,18 +1222,17 @@ namespace mgo
             return this->commandBuffer_;
         }
         
-        void CommandBuffer::record(std::uint32_t imageIndex) const
+        void CommandBuffer::draw() const
         {
+            this->inFlightFence_.wait();
             VkCommandBufferBeginInfo commandBufferBeginInfo = this->getVkCommandBufferBeginInfo();
             
             if (vkBeginCommandBuffer(this->commandBuffer_, &commandBufferBeginInfo) != VK_SUCCESS)
                 throw std::runtime_error("failed to begin recording mgo::vk::CommandBuffer!");
-            
-            VkClearValue black = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-            std::vector<VkClearValue> clearValues;
-            clearValues.emplace_back(black);
-            
-            VkRenderPassBeginInfo renderPassBeginInfo = this->getVkRenderPassBeginInfo(imageIndex, clearValues);
+
+            std::uint32_t imageIndex = this->swapchain_.getNextImageIndex(this->imageAvailableSemaphore_);
+            VkClearValue clearValue = {0.0f, 0.0f, 0.0f, 1.0f};
+            VkRenderPassBeginInfo renderPassBeginInfo = this->getVkRenderPassBeginInfo(imageIndex, clearValue);
             VkViewport viewport = this->getVkViewport();
             VkRect2D rect = this->getVkRect2D();
             
@@ -1238,33 +1245,21 @@ namespace mgo
             
             if (vkEndCommandBuffer(this->commandBuffer_) != VK_SUCCESS)
                 throw std::runtime_error("Failed to record mgo::vk::CommandBuffer!");
+        
+            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            VkSubmitInfo submitInfo = this->getVkSubmitInfo(this->imageAvailableSemaphore_, this->renderFinishedSemaphore_, imageIndex, waitStage);
+
+            if (vkQueueSubmit(this->device_.getGraphicsQueue(), 1, &submitInfo, this->inFlightFence_.get()) != VK_SUCCESS)
+                throw std::runtime_error("Failed to submit mgo::vk::CommandBuffer!");
+
+            VkPresentInfoKHR presentInfo = this->getVkPresentInfoKHR(this->renderFinishedSemaphore_, imageIndex);
+            
+            vkQueuePresentKHR(this->device_.getPresentQueue(), &presentInfo);
         }
         
         void CommandBuffer::reset() const noexcept
         {
             vkResetCommandBuffer(this->commandBuffer_, 0);
-        }
-        
-        void CommandBuffer::submit(const Semaphore& waitSemaphore, const Semaphore& signalSemaphore, const Fence& fence) const
-        {
-            std::array<VkSemaphore, 1> waitSemaphores = {waitSemaphore.get()};
-            std::array<VkSemaphore, 1> signalSemaphores = {signalSemaphore.get()};
-            std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-            
-            VkSubmitInfo submitInfo{};
-            submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            submitInfo.pNext                = nullptr;
-            submitInfo.waitSemaphoreCount   = 1;
-            submitInfo.pWaitSemaphores      = waitSemaphores.data();
-            submitInfo.pWaitDstStageMask    = waitStages.data();
-            submitInfo.commandBufferCount   = 1;
-            submitInfo.pCommandBuffers      = &this->commandBuffer_;
-            submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores    = signalSemaphores.data();
-            std::array<VkSubmitInfo, 1> submitInfos = {submitInfo};
-            
-            if (vkQueueSubmit(this->device_.getGraphicsQueue(), 1, submitInfos.data(), fence.get()) != VK_SUCCESS)
-                throw std::runtime_error("Failed to submit mgo::vk::CommandBuffer!");
         }
         
         VkCommandBufferBeginInfo CommandBuffer::getVkCommandBufferBeginInfo() const noexcept
@@ -1277,7 +1272,7 @@ namespace mgo
             return commandBufferBeginInfo;
         }
         
-        VkRenderPassBeginInfo CommandBuffer::getVkRenderPassBeginInfo(std::uint32_t imageIndex, const std::vector<VkClearValue>& clearValues) const noexcept
+        VkRenderPassBeginInfo CommandBuffer::getVkRenderPassBeginInfo(std::uint32_t imageIndex, const VkClearValue& clearValue) const noexcept
         {
             VkRenderPassBeginInfo renderPassBeginInfo{};
             renderPassBeginInfo.sType                   = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1287,8 +1282,8 @@ namespace mgo
             renderPassBeginInfo.renderArea.offset.x     = 0;
             renderPassBeginInfo.renderArea.offset.y     = 0;
             renderPassBeginInfo.renderArea.extent       = this->swapchain_.getVkExtent2D();
-            renderPassBeginInfo.clearValueCount         = static_cast<std::uint32_t>(clearValues.size());
-            renderPassBeginInfo.pClearValues            = clearValues.data();
+            renderPassBeginInfo.clearValueCount         = 1;
+            renderPassBeginInfo.pClearValues            = &clearValue;
             return renderPassBeginInfo;
         }
         
@@ -1311,6 +1306,39 @@ namespace mgo
             Rect.offset.y   = 0;
             Rect.extent     = this->swapchain_.getVkExtent2D();
             return Rect;
+        }
+        
+        VkSubmitInfo CommandBuffer::getVkSubmitInfo(const Semaphore& WaitSemaphores,
+                                                    const Semaphore& SignalSemaphores,
+                                                    const std::uint32_t& imageIndex,
+                                                    const VkPipelineStageFlags& waitStage) const noexcept
+        {
+            VkSubmitInfo submitInfo{};
+            submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+            submitInfo.pNext                = nullptr;
+            submitInfo.waitSemaphoreCount   = 1;
+            submitInfo.pWaitSemaphores      = &WaitSemaphores.get();
+            submitInfo.pWaitDstStageMask    = &waitStage;
+            submitInfo.commandBufferCount   = 1;
+            submitInfo.pCommandBuffers      = &this->commandBuffer_;
+            submitInfo.signalSemaphoreCount = 1;
+            submitInfo.pSignalSemaphores    = &SignalSemaphores.get();
+            return submitInfo;
+        }
+        
+        VkPresentInfoKHR CommandBuffer::getVkPresentInfoKHR(const Semaphore& WaitSemaphores,
+                                                            const std::uint32_t& imageIndex) const noexcept
+        {
+            VkPresentInfoKHR presentInfo{};
+            presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+            presentInfo.pNext              = nullptr;
+            presentInfo.waitSemaphoreCount = 1;
+            presentInfo.pWaitSemaphores    = &WaitSemaphores.get();
+            presentInfo.swapchainCount     = 1;
+            presentInfo.pSwapchains        = &this->swapchain_.get();
+            presentInfo.pImageIndices      = &imageIndex;
+            presentInfo.pResults           = nullptr;
+            return presentInfo;
         }
     }
 }

@@ -15,6 +15,8 @@
 		FF31C0F128F7218000967CB1 /* libglfw.3.3.dylib in CopyFiles */ = {isa = PBXBuildFile; fileRef = FF31C0EF28F7217B00967CB1 /* libglfw.3.3.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		FFC833CD292159DF00EC7039 /* mgo_vulkan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC833CB292159DF00EC7039 /* mgo_vulkan.cpp */; };
 		FFC833D42921A47700EC7039 /* mgo_glfw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FFC833D22921A47700EC7039 /* mgo_glfw.cpp */; };
+		FFC833EF292E8A9500EC7039 /* mgo_shader.vert in Sources */ = {isa = PBXBuildFile; fileRef = FFC833D129215A4200EC7039 /* mgo_shader.vert */; };
+		FFC833F0292E8A9900EC7039 /* mgo_shader.frag in Sources */ = {isa = PBXBuildFile; fileRef = FFC833CF292159FB00EC7039 /* mgo_shader.frag */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildRule section */
@@ -244,6 +246,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FFC833F0292E8A9900EC7039 /* mgo_shader.frag in Sources */,
+				FFC833EF292E8A9500EC7039 /* mgo_shader.vert in Sources */,
 				FFC833CD292159DF00EC7039 /* mgo_vulkan.cpp in Sources */,
 				FF31C0DC28F71F5F00967CB1 /* main.cpp in Sources */,
 				FF29E773290D975300230659 /* mgo_application.cpp in Sources */,

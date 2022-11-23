@@ -12,9 +12,6 @@ namespace mgo
     surface_(this->instance_, this->window_),
     physicalDevice_(this->instance_, this->surface_),
     device_(this->instance_, this->surface_, this->physicalDevice_),
-    imageAvailableSemaphore_(this->device_, 0),
-    renderFinishedSemaphore_(this->device_, 0),
-    inFlightFence_(this->device_, VK_FENCE_CREATE_SIGNALED_BIT),
     swapchain_(this->surface_, this->physicalDevice_, this->device_),
     imageViews_(this->device_, this->swapchain_),
     renderPass_(this->device_, this->swapchain_),
@@ -38,14 +35,10 @@ namespace mgo
         while (!this->window_.shouldClose())
         {
             this->window_.pollEvents();
-            //this->drawFrame();
+            this->commandBuffer_.draw();
         }
+        this->device_.wait();
     }
     
-    void Application::drawFrame()
-    {
-        this->commandBuffer_.reset();
-        this->commandBuffer_.record(this->swapchain_.getNextImageIndex(this->imageAvailableSemaphore_));
-        
-    }
+
 }
