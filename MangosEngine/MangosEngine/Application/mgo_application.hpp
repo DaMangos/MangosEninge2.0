@@ -30,8 +30,5 @@ namespace mgo
         ~Application();
                 
         void run();
-        
-    private:
-        void drawFrame();
     };
 }

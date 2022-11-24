@@ -5,7 +5,6 @@
 #include <set>
 #include <fstream>
 #include <array>
-
 namespace mgo
 {
     namespace vk
@@ -232,7 +231,7 @@ namespace mgo
             
             VkExtent2D getVkExtent2D() const noexcept;
             
-            std::uint32_t getNextImageIndex(const Semaphore& semaphore) const noexcept;
+            void getNextImageIndex(const Semaphore& semaphore, std::uint32_t& ImageIndex) const noexcept;
         };
         
 #pragma mark - mgo::vk::ImageViews
@@ -278,8 +277,6 @@ namespace mgo
             VkAttachmentReference getVkAttachmentReference() const noexcept;
             
             VkSubpassDescription getVkSubpassDescription(const VkAttachmentReference* pColorAttachmentReference) const noexcept;
-            
-            //VkSubpassDependency getVkSubpassDependency(const )
         };
         
 #pragma mark - mgo::vk::Framebuffers
@@ -395,6 +392,7 @@ namespace mgo
             Semaphore imageAvailableSemaphore_;
             Semaphore renderFinishedSemaphore_;
             Fence inFlightFence_;
+            std::uint32_t imageIndex_;
             const Device& device_;
             const Swapchain& swapchain_;
             const RenderPass& renderPass_;
@@ -415,26 +413,28 @@ namespace mgo
             
             const VkCommandBuffer& get() const noexcept;
             
-            void draw() const;
-            
-            void reset() const noexcept;
-           
+            void draw();
+
         private:
-            VkCommandBufferBeginInfo getVkCommandBufferBeginInfo() const noexcept;
+            void beginCommandBuffer() const;
             
-            VkRenderPassBeginInfo getVkRenderPassBeginInfo(std::uint32_t imageIndex, const VkClearValue& clearValues) const noexcept;
+            void beginRenderPass() const noexcept;
             
-            VkViewport getVkViewport() const noexcept;
+            void bindPipline() const noexcept;
             
-            VkRect2D getVkRect2D() const noexcept;
+            void setViewport() const noexcept;
             
-            VkSubmitInfo getVkSubmitInfo(const Semaphore& WaitSemaphores,
-                                         const Semaphore& SignalSemaphores,
-                                         const std::uint32_t& imageIndex,
-                                         const VkPipelineStageFlags& waitStage) const noexcept;
+            void setScissor() const noexcept;
+
+            void drawImage() const noexcept;
             
-            VkPresentInfoKHR getVkPresentInfoKHR(const Semaphore& WaitSemaphores,
-                                                 const std::uint32_t& imageIndex) const noexcept;
+            void endRenderPass() const noexcept;
+            
+            void endCommandBuffer() const;
+            
+            void submitImage() const;
+            
+            void presentImage() const;
         };
     }
 }

@@ -31,7 +31,6 @@ namespace mgo
             
     void Application::run()
     {
-        MGO_DEBUG_LOG_MESSAGE("Running mgo::Application!");
         while (!this->window_.shouldClose())
         {
             this->window_.pollEvents();
@@ -39,6 +38,4 @@ namespace mgo
         }
         this->device_.wait();
     }
-    
-
 }

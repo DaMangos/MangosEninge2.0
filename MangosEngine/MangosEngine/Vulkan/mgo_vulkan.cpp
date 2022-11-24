@@ -514,7 +514,7 @@ namespace mgo
             deviceCreateInfo.pEnabledFeatures           = &physicalDeviceFeatures;
             
             if (vkCreateDevice(this->physicalDevice_.get(), &deviceCreateInfo, nullptr, &this->device_) != VK_SUCCESS)
-                throw std::runtime_error("failed to create mgo::vk::Device!");
+                throw std::runtime_error("Failed to create mgo::vk::Device!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Device!");
             
             vkGetDeviceQueue(this->device_, this->physicalDevice_.getQueueFamilyIndices().graphicsFamily_.value(), 0, &this->graphicsQueue_);
@@ -691,11 +691,9 @@ namespace mgo
             return this->extent_;
         }
         
-        std::uint32_t Swapchain::getNextImageIndex(const Semaphore& semaphore) const noexcept
+        void Swapchain::getNextImageIndex(const Semaphore& semaphore, std::uint32_t& ImageIndex) const noexcept
         {
-            std::uint32_t ImageIndex;
             vkAcquireNextImageKHR(this->device_.get(), this->swapchain_, UINT64_MAX, semaphore.get(), VK_NULL_HANDLE, &ImageIndex);
-            return ImageIndex;
         }
         
         
@@ -935,7 +933,7 @@ namespace mgo
             shaderModuleCreateInfo.pCode    = reinterpret_cast<const uint32_t*>(code.data());
             
             if (vkCreateShaderModule(this->device_.get(), &shaderModuleCreateInfo, nullptr, &this->shaderModule_) != VK_SUCCESS)
-                throw std::runtime_error("failed to create mgo::vk::Pipeline::ShaderModule!");
+                throw std::runtime_error("Failed to create mgo::vk::Pipeline::ShaderModule!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Pipeline::ShaderModule!");
         }
         
@@ -1008,7 +1006,7 @@ namespace mgo
             graphicsPipelineCreateInfo.basePipelineHandle   = VK_NULL_HANDLE;
             
             if (vkCreateGraphicsPipelines(this->device_.get(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &this->pipeline_) != VK_SUCCESS)
-                throw std::runtime_error("failed to create mgo::vk::Pipeline!");
+                throw std::runtime_error("Failed to create mgo::vk::Pipeline!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::Pipeline!");
         }
         
@@ -1208,7 +1206,7 @@ namespace mgo
             commandBufferAllocateInfo.commandBufferCount  = 1;
             
             if (vkAllocateCommandBuffers(this->device_.get(), &commandBufferAllocateInfo, &this->commandBuffer_) != VK_SUCCESS)
-                throw std::runtime_error("failed to create mgo::vk::CommandBuffer!");
+                throw std::runtime_error("Failed to create mgo::vk::CommandBuffer!");
             MGO_DEBUG_LOG_MESSAGE("Created mgo::vk::CommandBuffer!");
         }
         
@@ -1222,72 +1220,61 @@ namespace mgo
             return this->commandBuffer_;
         }
         
-        void CommandBuffer::draw() const
+        void CommandBuffer::draw()
         {
+            this->swapchain_.getNextImageIndex(this->imageAvailableSemaphore_, this->imageIndex_);
             this->inFlightFence_.wait();
-            VkCommandBufferBeginInfo commandBufferBeginInfo = this->getVkCommandBufferBeginInfo();
-            
-            if (vkBeginCommandBuffer(this->commandBuffer_, &commandBufferBeginInfo) != VK_SUCCESS)
-                throw std::runtime_error("failed to begin recording mgo::vk::CommandBuffer!");
-
-            std::uint32_t imageIndex = this->swapchain_.getNextImageIndex(this->imageAvailableSemaphore_);
-            VkClearValue clearValue = {0.0f, 0.0f, 0.0f, 1.0f};
-            VkRenderPassBeginInfo renderPassBeginInfo = this->getVkRenderPassBeginInfo(imageIndex, clearValue);
-            VkViewport viewport = this->getVkViewport();
-            VkRect2D rect = this->getVkRect2D();
-            
-            vkCmdBeginRenderPass(this->commandBuffer_, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(this->commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline_.get());
-            vkCmdSetViewport(this->commandBuffer_, 0, 1, &viewport);
-            vkCmdSetScissor(this->commandBuffer_, 0, 1, &rect);
-            vkCmdDraw(this->commandBuffer_, 3, 1, 0, 0);
-            vkCmdEndRenderPass(this->commandBuffer_);
-            
-            if (vkEndCommandBuffer(this->commandBuffer_) != VK_SUCCESS)
-                throw std::runtime_error("Failed to record mgo::vk::CommandBuffer!");
-        
-            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            VkSubmitInfo submitInfo = this->getVkSubmitInfo(this->imageAvailableSemaphore_, this->renderFinishedSemaphore_, imageIndex, waitStage);
-
-            if (vkQueueSubmit(this->device_.getGraphicsQueue(), 1, &submitInfo, this->inFlightFence_.get()) != VK_SUCCESS)
-                throw std::runtime_error("Failed to submit mgo::vk::CommandBuffer!");
-
-            VkPresentInfoKHR presentInfo = this->getVkPresentInfoKHR(this->renderFinishedSemaphore_, imageIndex);
-            
-            vkQueuePresentKHR(this->device_.getPresentQueue(), &presentInfo);
+            this->beginCommandBuffer();
+            this->beginRenderPass();
+            this->bindPipline();
+            this->setViewport();
+            this->setScissor();
+            this->drawImage();
+            this->endRenderPass();
+            this->endCommandBuffer();
+            this->submitImage();
+            this->presentImage();
         }
         
-        void CommandBuffer::reset() const noexcept
+        void CommandBuffer::beginCommandBuffer() const
         {
             vkResetCommandBuffer(this->commandBuffer_, 0);
-        }
-        
-        VkCommandBufferBeginInfo CommandBuffer::getVkCommandBufferBeginInfo() const noexcept
-        {
+
             VkCommandBufferBeginInfo commandBufferBeginInfo{};
             commandBufferBeginInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
             commandBufferBeginInfo.pNext            = nullptr;
             commandBufferBeginInfo.flags            = 0;
             commandBufferBeginInfo.pInheritanceInfo = nullptr;
-            return commandBufferBeginInfo;
+            
+            if (vkBeginCommandBuffer(this->commandBuffer_, &commandBufferBeginInfo) != VK_SUCCESS)
+                throw std::runtime_error("Failed to begin recording image!");
         }
-        
-        VkRenderPassBeginInfo CommandBuffer::getVkRenderPassBeginInfo(std::uint32_t imageIndex, const VkClearValue& clearValue) const noexcept
+    
+        void CommandBuffer::beginRenderPass() const noexcept
         {
+            VkClearValue clearValue{};
+            clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
+            
             VkRenderPassBeginInfo renderPassBeginInfo{};
             renderPassBeginInfo.sType                   = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
             renderPassBeginInfo.pNext                   = nullptr;
             renderPassBeginInfo.renderPass              = this->renderPass_.get();
-            renderPassBeginInfo.framebuffer             = this->framebuffers_.get().at(static_cast<std::uint32_t>(imageIndex));
+            renderPassBeginInfo.framebuffer             = this->framebuffers_.get()[static_cast<std::size_t>(this->imageIndex_)];
             renderPassBeginInfo.renderArea.offset.x     = 0;
             renderPassBeginInfo.renderArea.offset.y     = 0;
             renderPassBeginInfo.renderArea.extent       = this->swapchain_.getVkExtent2D();
             renderPassBeginInfo.clearValueCount         = 1;
             renderPassBeginInfo.pClearValues            = &clearValue;
-            return renderPassBeginInfo;
+            
+            vkCmdBeginRenderPass(this->commandBuffer_, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         }
         
-        VkViewport CommandBuffer::getVkViewport() const noexcept
+        void CommandBuffer::bindPipline() const noexcept
+        {
+            vkCmdBindPipeline(this->commandBuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, this->pipeline_.get());
+        }
+    
+        void CommandBuffer::setViewport() const noexcept
         {
             VkViewport viewport{};
             viewport.x          = 0.0f;
@@ -1296,49 +1283,71 @@ namespace mgo
             viewport.height     = static_cast<float>(this->swapchain_.getVkExtent2D().height);
             viewport.minDepth   = 0.0f;
             viewport.maxDepth   = 1.0f;
-            return viewport;
+            
+            vkCmdSetViewport(this->commandBuffer_, 0, 1, &viewport);
+        }
+    
+        void CommandBuffer::setScissor() const noexcept
+        {
+            VkRect2D scissor{};
+            scissor.offset.x    = 0;
+            scissor.offset.y    = 0;
+            scissor.extent      = this->swapchain_.getVkExtent2D();
+            vkCmdSetScissor(this->commandBuffer_, 0, 1, &scissor);
         }
         
-        VkRect2D CommandBuffer::getVkRect2D() const noexcept
+        void CommandBuffer::drawImage() const noexcept
         {
-            VkRect2D Rect{};
-            Rect.offset.x   = 0;
-            Rect.offset.y   = 0;
-            Rect.extent     = this->swapchain_.getVkExtent2D();
-            return Rect;
+            vkCmdDraw(this->commandBuffer_, 3, 1, 0, 0);
+        }
+    
+        void CommandBuffer::endRenderPass() const noexcept
+        {
+            vkCmdEndRenderPass(this->commandBuffer_);
+        }
+    
+        void CommandBuffer::endCommandBuffer() const 
+        {
+            if (vkEndCommandBuffer(this->commandBuffer_) != VK_SUCCESS)
+                throw std::runtime_error("Failed to end recording image!");
         }
         
-        VkSubmitInfo CommandBuffer::getVkSubmitInfo(const Semaphore& WaitSemaphores,
-                                                    const Semaphore& SignalSemaphores,
-                                                    const std::uint32_t& imageIndex,
-                                                    const VkPipelineStageFlags& waitStage) const noexcept
+        void CommandBuffer::submitImage() const
         {
+            VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            
             VkSubmitInfo submitInfo{};
             submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
             submitInfo.pNext                = nullptr;
             submitInfo.waitSemaphoreCount   = 1;
-            submitInfo.pWaitSemaphores      = &WaitSemaphores.get();
+            submitInfo.pWaitSemaphores      = &this->imageAvailableSemaphore_.get();
             submitInfo.pWaitDstStageMask    = &waitStage;
             submitInfo.commandBufferCount   = 1;
             submitInfo.pCommandBuffers      = &this->commandBuffer_;
             submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores    = &SignalSemaphores.get();
-            return submitInfo;
+            submitInfo.pSignalSemaphores    = &this->renderFinishedSemaphore_.get();
+            
+            if (vkQueueSubmit(this->device_.getGraphicsQueue(), 1, &submitInfo, this->inFlightFence_.get()) != VK_SUCCESS)
+                throw std::runtime_error("Failed to submit image!");
         }
         
-        VkPresentInfoKHR CommandBuffer::getVkPresentInfoKHR(const Semaphore& WaitSemaphores,
-                                                            const std::uint32_t& imageIndex) const noexcept
+        void CommandBuffer::presentImage() const
         {
+            VkResult queuePresentResult;
+            
             VkPresentInfoKHR presentInfo{};
             presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
             presentInfo.pNext              = nullptr;
             presentInfo.waitSemaphoreCount = 1;
-            presentInfo.pWaitSemaphores    = &WaitSemaphores.get();
+            presentInfo.pWaitSemaphores    = &this->renderFinishedSemaphore_.get();
             presentInfo.swapchainCount     = 1;
             presentInfo.pSwapchains        = &this->swapchain_.get();
-            presentInfo.pImageIndices      = &imageIndex;
-            presentInfo.pResults           = nullptr;
-            return presentInfo;
+            presentInfo.pImageIndices      = &this->imageIndex_;
+            presentInfo.pResults           = &queuePresentResult;
+            
+            vkQueuePresentKHR(this->device_.getPresentQueue(), &presentInfo);
+            if (queuePresentResult != VK_SUCCESS)
+                throw std::runtime_error("Failed to present image!");
         }
     }
 }
