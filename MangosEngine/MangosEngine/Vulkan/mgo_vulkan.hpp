@@ -121,9 +121,7 @@ namespace mgo
             
         public:
             PhysicalDevice(const Instance& instance, const Surface& surface);
-            
-            ~PhysicalDevice() noexcept;
-            
+                        
             const VkPhysicalDevice& get() const noexcept;
             
             std::vector<const char*> getExtensions() const noexcept;
@@ -180,7 +178,7 @@ namespace mgo
             const Device& device_;
             
         public:
-            Semaphore(const Device& device, VkSemaphoreCreateFlags flags);
+            Semaphore(const Device& device);
             
             ~Semaphore() noexcept;
             
@@ -195,24 +193,28 @@ namespace mgo
             const Device& device_;
             
         public:
-            Fence(const Device& device, VkFenceCreateFlags flags);
+            Fence(const Device& device);
             
             ~Fence() noexcept;
             
             const VkFence& get() const noexcept;
             
             void wait() const noexcept;
+            
+            void reset() const noexcept;
         };
         
 #pragma mark - mgo::vk::Swapchain
         class Swapchain final
         {
         private:
+             
             VkSwapchainKHR swapchain_;
             VkSurfaceCapabilitiesKHR surfaceCapabilities_;
             VkSurfaceFormatKHR surfaceFormat_;
             VkPresentModeKHR presentMode_;
             VkExtent2D extent_;
+            const Surface& surface_;
             const PhysicalDevice& physicalDevice_;
             const Device& device_;
             
@@ -221,8 +223,16 @@ namespace mgo
             
             ~Swapchain() noexcept;
             
-            const VkSwapchainKHR& get() const noexcept;
+        private:
+            void create();
             
+            void destory();
+            
+        public:
+            void recreate();
+
+            const VkSwapchainKHR& get() const noexcept;
+
             VkSurfaceCapabilitiesKHR getVkSurfaceCapabilitiesKHR() const noexcept;
             
             VkSurfaceFormatKHR getVkSurfaceFormatKHR() const noexcept;
@@ -230,8 +240,6 @@ namespace mgo
             VkPresentModeKHR getVkPresentModeKHR() const noexcept;
             
             VkExtent2D getVkExtent2D() const noexcept;
-            
-            void getNextImageIndex(const Semaphore& semaphore, std::uint32_t& ImageIndex) const noexcept;
         };
         
 #pragma mark - mgo::vk::ImageViews
@@ -241,19 +249,23 @@ namespace mgo
             std::vector<VkImage> images_;
             std::vector<VkImageView> imageViews_;
             const Device& device_;
-            const Swapchain& swapchain_;
             
         public:
             ImageViews(const Device& device, const Swapchain& swapchain);
             
             ~ImageViews() noexcept;
             
+        private:
+            void create(const Swapchain& swapchain);
+            
+            void destory();
+            
+        public:
+            void recreate(const Swapchain& swapchain);
+
             const std::vector<VkImageView>& get() const noexcept;
             
             std::size_t size() const noexcept;
-            
-        private:
-            VkImageViewCreateInfo getVkImageViewCreateInfo(VkImage image) const noexcept;
         };
         
 #pragma mark - mgo::vk::RenderPass
@@ -285,14 +297,20 @@ namespace mgo
         private:
             std::vector<VkFramebuffer> framebuffers_;
             const Device& device_;
-            const Swapchain& swapchain_;
-            const ImageViews& imageViews_;
-            const RenderPass& renderPass_;
+            ImageViews& imageViews_;
             
         public:
-            Framebuffers(const Device& device, const Swapchain& swapchain, const ImageViews& imageViews, const RenderPass& renderPass);
+            Framebuffers(const Device& device, const Swapchain& swapchain, ImageViews& imageViews, const RenderPass& renderPass);
             
             ~Framebuffers() noexcept;
+            
+        private:
+            void create(const Swapchain& swapchain, const RenderPass& renderPass);
+            
+            void destory();
+            
+        public:
+            void recreate(const Swapchain& swapchain, const RenderPass& renderPass);
             
             const std::vector<VkFramebuffer>& get() const noexcept;
             
@@ -376,7 +394,6 @@ namespace mgo
             const Device& device_;
             
         public:
-            
             CommandPool(const PhysicalDevice& physicalDevice, const Device& device);
             
             ~CommandPool() noexcept;
@@ -384,38 +401,44 @@ namespace mgo
             const VkCommandPool& get() const noexcept;
         };
         
-#pragma mark - mgo::vk::CommandBuffer
-        class CommandBuffer final
+#pragma mark - mgo::vk::CommandBuffers
+        class CommandBuffers final
         {
+        public:
+            static const std::size_t MAX_FRAMES_IN_FLIGHT = 2;
+
         private:
-            VkCommandBuffer commandBuffer_;
-            Semaphore imageAvailableSemaphore_;
-            Semaphore renderFinishedSemaphore_;
-            Fence inFlightFence_;
+            std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers_;
+            std::array<Semaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores_;
+            std::array<Semaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores_;
+            std::array<Fence, MAX_FRAMES_IN_FLIGHT> inFlightFences_;
             std::uint32_t imageIndex_;
+            std::uint32_t currentFrame_;
+            glfw::Window& window_;
             const Device& device_;
-            const Swapchain& swapchain_;
-            const RenderPass& renderPass_;
-            const Framebuffers& framebuffers_;
+            Swapchain& swapchain_;
+            RenderPass& renderPass_;
+            Framebuffers& framebuffers_;
             const CommandPool& commandPool_;
             const Pipeline& pipeline_;
             
         public:
             
-            CommandBuffer(const Device& device,
-                          const Swapchain& swapchain,
-                          const RenderPass& renderPass,
-                          const Framebuffers& framebuffers,
-                          const Pipeline& pipeline,
-                          const CommandPool& commandPool);
-            
-            ~CommandBuffer() noexcept;
-            
-            const VkCommandBuffer& get() const noexcept;
+            CommandBuffers(glfw::Window& window,
+                           const Device& device,
+                           Swapchain& swapchain,
+                           RenderPass& renderPass,
+                           Framebuffers& framebuffers,
+                           const Pipeline& pipeline,
+                           const CommandPool& commandPool);
+                        
+            const std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT>& get() const noexcept;
             
             void draw();
 
         private:
+            void getNextImageIndex();
+            
             void beginCommandBuffer() const;
             
             void beginRenderPass() const noexcept;
@@ -434,7 +457,7 @@ namespace mgo
             
             void submitImage() const;
             
-            void presentImage() const;
+            void presentImage();
         };
     }
 }

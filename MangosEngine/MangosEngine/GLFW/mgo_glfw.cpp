@@ -9,7 +9,7 @@ namespace mgo
         windowName_(windowName),
         windowHeight_(windowHeight),
         windowWidth_(windowWidth),
-        pWindow_(nullptr)
+        framebufferResized_(false)
         {
             glfwSetErrorCallback(this->errorCallback);
             
@@ -17,20 +17,20 @@ namespace mgo
                 throw std::runtime_error("Failed to initialise GLFW!");
                         
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-            glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
             
             this->pWindow_ = glfwCreateWindow(this->windowWidth_, this->windowHeight_, this->windowName_.c_str(), nullptr, nullptr);
             
             if (!this->pWindow_)
                 throw std::runtime_error("Failed to create mgo::glfw::Window!");
-            MGO_DEBUG_LOG_MESSAGE("Created mgo::glfw::Window!");
+            
+            glfwSetWindowUserPointer(this->pWindow_, this);
+            glfwSetFramebufferSizeCallback(this->pWindow_, this->framebufferResizeCallback);
         }
         
         Window::~Window() noexcept
         {
             glfwDestroyWindow(this->pWindow_);
             glfwTerminate();
-            MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::glfw::Window!");
         }
         
         const GLFWwindow* Window::Get() const noexcept
@@ -70,9 +70,25 @@ namespace mgo
             glfwPollEvents();
         }
         
-        void Window::errorCallback(int error, const char* description)
+        bool Window::hasResized() noexcept
+        {
+            if (this->framebufferResized_)
+            {
+                this->framebufferResized_ = false;
+                return true;
+            }
+            return false;
+        }
+
+        void Window::errorCallback(int error, const char* description) noexcept
         {
             MGO_DEBUG_LOG_ERROR("GLFW error: " << description);
+        }
+        
+        void Window::framebufferResizeCallback(GLFWwindow* pWindow, int width, int height)
+        {
+            auto window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+            window->framebufferResized_ = true;
         }
     }
 }

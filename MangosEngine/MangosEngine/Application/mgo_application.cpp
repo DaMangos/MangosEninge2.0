@@ -19,15 +19,8 @@ namespace mgo
     pipelineLayout_(this->device_),
     pipeline_(this->device_, this->renderPass_, this->pipelineLayout_),
     commandPool_(this->physicalDevice_, this->device_),
-    commandBuffer_(this->device_, this->swapchain_, this->renderPass_, this->framebuffers_, this->pipeline_, this->commandPool_)
-    {
-        MGO_DEBUG_LOG_MESSAGE("Created mgo::Application!");
-    }
-    
-    Application::~Application()
-    {
-        MGO_DEBUG_LOG_MESSAGE("Destroyed mgo::Application!");
-    }
+    commandBuffer_(this->window_, this->device_, this->swapchain_, this->renderPass_, this->framebuffers_, this->pipeline_, this->commandPool_)
+    {}
             
     void Application::run()
     {

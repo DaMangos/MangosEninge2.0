@@ -22,13 +22,11 @@ namespace mgo
         vk::PipelineLayout pipelineLayout_;
         vk::Pipeline pipeline_;
         vk::CommandPool commandPool_;
-        vk::CommandBuffer commandBuffer_;
+        vk::CommandBuffers commandBuffer_;
         
     public:
         Application();
-        
-        ~Application();
-                
+                        
         void run();
     };
 }

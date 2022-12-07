@@ -13,10 +13,11 @@ namespace mgo
         class Window final
         {
         private:
+            GLFWwindow* pWindow_;
             const std::string windowName_;
             const std::uint32_t windowHeight_;
             const std::uint32_t windowWidth_;
-            GLFWwindow* pWindow_;
+            bool framebufferResized_;
             
         public:
             Window(const std::string& windowName, std::uint32_t windowWidth, std::uint32_t windowHeight);
@@ -33,9 +34,14 @@ namespace mgo
             
             bool shouldClose() const noexcept;
             
-            static void pollEvents() noexcept;
+            void pollEvents() noexcept;
             
-            static void errorCallback(int error, const char* description);
+            bool hasResized() noexcept;
+            
+        private:
+            static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+            
+            static void errorCallback(int error, const char* description) noexcept;
         };
     }
 }
