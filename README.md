@@ -1,2 +1,2 @@
 # MangosEninge
-3-D Eninge made with Vulkan and GLFW.
+Graphics engine that calls Vulkan and GLFW funtions.
