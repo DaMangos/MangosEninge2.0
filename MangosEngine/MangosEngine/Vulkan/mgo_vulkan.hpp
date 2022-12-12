@@ -112,8 +112,6 @@ namespace mgo
             
         private:
             VkPhysicalDevice physicalDevice_;
-            VkQueue graphicsQueue_;
-            VkQueue presentQueue_;
             QueueFamilyIndices queueFamilyIndices_;
             const std::vector<const char*> extensions_;
             const Instance& instance_;

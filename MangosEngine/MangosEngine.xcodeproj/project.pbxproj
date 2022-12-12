@@ -106,7 +106,6 @@
 		FF31C0CF28F71F5F00967CB1 = {
 			isa = PBXGroup;
 			children = (
-				FF31C0F228F7260300967CB1 /* Resources */,
 				FF31C0DA28F71F5F00967CB1 /* MangosEngine */,
 				FF31C0D928F71F5F00967CB1 /* Products */,
 				FF31C0E528F7204A00967CB1 /* Frameworks */,
@@ -140,13 +139,6 @@
 				FF31C0EC28F7215600967CB1 /* libvulkan.1.3.216.dylib */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		FF31C0F228F7260300967CB1 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		FFC833C52921584500EC7039 /* Vulkan */ = {

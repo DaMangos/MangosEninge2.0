@@ -32,13 +32,13 @@ namespace mgo
 #else
 #define MGO_VK_INSTANCE_NEXT nullptr
 #endif
-            VkApplicationInfo applicationInfo = this->getVkApplicationInfo();
+            //VkApplicationInfo applicationInfo = this->getVkApplicationInfo();
             
             VkInstanceCreateInfo instanceCreateInfo{};
             instanceCreateInfo.sType                    = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
             instanceCreateInfo.flags                    = MGO_VK_INSTANCE_FLAGS;
             instanceCreateInfo.pNext                    = MGO_VK_INSTANCE_NEXT;
-            instanceCreateInfo.pApplicationInfo         = &applicationInfo;
+            instanceCreateInfo.pApplicationInfo         = nullptr;
             instanceCreateInfo.enabledLayerCount        = MGO_VK_ENABLED_LAYERS_COUNT;
             instanceCreateInfo.ppEnabledLayerNames      = MGO_VK_ENABLED_LAYERS_NAME;
             instanceCreateInfo.enabledExtensionCount    = static_cast<std::uint32_t>(this->extensions_.size());
@@ -67,6 +67,7 @@ namespace mgo
 #if MGO_DEBUG
             extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+            extensions.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
             return extensions;
         }
         
